@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* ALL CSS FROM THE PREVIOUS POLISHED UI STEP GOES HERE. IT DOES NOT NEED TO CHANGE. */
+    /* For brevity, I am omitting the large CSS block, but you should use the one from the "make the UI better" step */
+    :root { --primary-color: #0095f6; --background-color: #fafafa; /* etc... */ }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* etc... */ }
+    /* NEW CSS for Edit Profile Modal */
+    #edit-profile-modal #modal-content textarea { width: 100%; min-height: 80px; padding: 10px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 3px; }
+  </style>
+  <link href="https://fonts.googleapis.com/css?family=Grand+Hotel" rel="stylesheet">
+</head>
+<body>
+
+  <!-- All HTML structure from previous step is the same, just add the new Edit Profile Modal -->
+  <div id="loading-view" class="view loader-container"><div class="loader"></div></div>
+  <div id="auth-view" class="view hidden"> <!-- Auth Forms HTML --> </div>
+  <main id="main-app-view" class="view hidden"> <!-- Header and View Containers --> </main>
+  <div id="modal-backdrop" class="hidden"> <!-- New Post Modal HTML --> </div>
+
+  <!-- NEW: Edit Profile Modal (initially hidden) -->
+  <div id="edit-profile-modal" class="hidden">
+      <div id="modal-content">
+        <button id="modal-close-btn" onclick="closeEditProfileModal()">×</button>
+        <h3>Edit Profile</h3>
+        <input type="text" id="editDisplayName" placeholder="Display Name">
+        <textarea id="editBio" placeholder="Write a short bio..."></textarea>
+        <button id="saveProfileBtn" onclick="handleProfileUpdate()">Save Changes</button>
+      </div>
+  </div>
+
+  <script>
+    // THE KEY FOR GITHUB PAGES
+    // After you deploy, paste your Web App URL here.
+    const SCRIPT_URL = "YOUR_DEPLOYED_WEB_APP_URL"; // <-- PASTE YOUR URL HERE!
+
+    let currentUser = null; let currentFile = null;
+    const ICONS = { /* ... Your SVG icons from before ... */ };
+
+    // This is the new API helper function. It replaces google.script.run
+    async function apiRequest(action, params = []) {
+      try {
+        const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, params }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+        const result = await response.json();
+        if (result.status === 'error') throw new Error(result.message);
+        return result.data;
+      } catch (error) { console.error('API Request Error:', action, error); throw error; }
+    }
+
+    // --- All functions now use 'apiRequest' ---
+    document.addEventListener("DOMContentLoaded", initializeApp);
+    function initializeApp(){ showView('loading-view'); apiRequest('checkUser').then(onUserCheck).catch(onInitializeError); }
+    function onInitializeError(err){ alert("Could not connect to the API. Ensure SCRIPT_URL is correct and the project is deployed for 'Anyone'. Error: " + err.message); showView('auth-view'); }
+    function onUserCheck(user){ if (user){ currentUser = user; document.getElementById('my-profile-btn').onclick = () => showProfile(currentUser.username); showView('main-app-view'); showFeedView(); } else { currentUser = null; showView('auth-view'); } }
+    
+    // --- View Management ---
+    function showView(viewId){ /* ... */ }
+    function showFeedView(){ /* ... */ }
+    async function showProfile(username){ /* ... */ }
+    
+    // --- Auth ---
+    async function handleLogin(){ /* ... uses apiRequest('logInUser', ...) ... */ }
+    async function handleSignUp(){ /* ... uses apiRequest('signUpUser', ...) ... */ }
+    function handleLogout(){ apiRequest('logOutUser').then(initializeApp); }
+    
+    // --- Post, Like, Comment Actions ---
+    function handleFileSelect(event){ /* ... */ }
+    async function submitPost(){ /* ... uses apiRequest('createPost', ...) ... */ }
+    function loadFeed(){ apiRequest('getFeedData').then(displayPosts); }
+    function handleToggleLike(button, postId){ apiRequest('toggleLike', [postId]).then(loadFeed); }
+    async function submitComment(postId){ /* ... uses apiRequest('addComment', ...) ... */ }
+    
+    // --- Display Functions ---
+    function displayPosts(posts){ /* ... */ }
+    function displayProfile(profile){
+      const view = document.getElementById('profile-view');
+      const editBtn = currentUser && currentUser.userId === profile.userId 
+        ? `<button onclick="openEditProfileModal(profile)">Edit Profile</button>` 
+        : '';
+      // ... build the rest of your profile HTML from before
+      // Make sure to add the 'editBtn' to the HTML string.
+      view.innerHTML = `<div class="profile-header"> ... ${editBtn} ... </div> ... `;
+    }
+
+    // --- NEW: Profile Customization Functions ---
+    function openEditProfileModal(profile) {
+      document.getElementById('editDisplayName').value = profile.displayName;
+      document.getElementById('editBio').value = profile.bio || '';
+      document.getElementById('edit-profile-modal').classList.remove('hidden');
+    }
+    function closeEditProfileModal() {
+      document.getElementById('edit-profile-modal').classList.add('hidden');
+    }
+    async function handleProfileUpdate() {
+      document.getElementById('saveProfileBtn').disabled = true;
+      const profileData = {
+        displayName: document.getElementById('editDisplayName').value,
+        bio: document.getElementById('editBio').value
+      };
+      try {
+        await apiRequest('updateUserProfile', [profileData]);
+        closeEditProfileModal();
+        showProfile(currentUser.username); // Refresh the profile view
+      } catch (err) {
+        alert("Error updating profile: " + err.message);
+      } finally {
+        document.getElementById('saveProfileBtn').disabled = false;
+      }
+    }
+    
+    // --- (Include ALL other JS functions from the complete code in my previous response) ---
+    // Make sure you have functions like onLoginError, onSignupError, timeAgo, openModal, closeModal, etc.
+  </script>
+</body>
+</html>
