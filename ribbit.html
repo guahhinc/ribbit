@@ -4,115 +4,129 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* ALL CSS FROM THE PREVIOUS POLISHED UI STEP GOES HERE. IT DOES NOT NEED TO CHANGE. */
-    /* For brevity, I am omitting the large CSS block, but you should use the one from the "make the UI better" step */
-    :root { --primary-color: #0095f6; --background-color: #fafafa; /* etc... */ }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* etc... */ }
-    /* NEW CSS for Edit Profile Modal */
-    #edit-profile-modal #modal-content textarea { width: 100%; min-height: 80px; padding: 10px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 3px; }
+    :root { --primary-color: #0095f6; --background-color: #fafafa; --card-background-color: #ffffff; --text-color: #262626; --secondary-text-color: #8e8e8e; --border-color: #dbdbdb; --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { font-family: var(--font-family); margin: 0; background-color: var(--background-color); color: var(--text-color); }
+    .hidden { display: none !important; }
+    .view { width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; }
+    button { cursor: pointer; }
+    .loader-container { text-align: center; padding: 40px; }
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    header { background-color: var(--card-background-color); border-bottom: 1px solid var(--border-color); padding: 10px 16px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 28px; font-family: 'Grand Hotel', cursive; cursor: pointer; }
+    .header-nav button { background: var(--primary-color); color: white; border: none; padding: 8px 12px; font-weight: 600; border-radius: 5px; margin-left: 10px; }
+    #logout-btn { background: none; color: var(--primary-color); }
+    #feed { padding-top: 20px; }
+    .post { background-color: var(--card-background-color); border: 1px solid var(--border-color); border-radius: 8px; margin: 0 auto 20px; max-width: 500px; }
+    .post-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+    .post-header .user-info { display: flex; align-items: center; font-weight: 600; cursor: pointer; }
+    .post-header img { width: 32px; height: 32px; border-radius: 50%; margin-right: 12px; }
+    .post-image img { width: 100%; height: auto; display: block; }
+    .post-actions { padding: 4px 8px; display: flex; align-items: center; }
+    .action-btn { background: none; border: none; padding: 8px; } .action-btn svg { width: 24px; height: 24px; }
+    .likes { font-weight: 600; padding: 0 16px 8px; font-size: 14px; }
+    .caption-container { padding: 0 16px 8px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+    .username { font-weight: 600; margin-right: 5px; cursor: pointer; }
+    .timestamp { color: var(--secondary-text-color); font-size: 10px; text-transform: uppercase; padding: 0 16px 12px; }
+    .comments-section { padding: 0 16px; font-size: 14px; }
+    .comment { margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; word-break: break-word; }
+    .comment p { margin: 0; }
+    .comment-form { display: flex; padding: 8px 16px; border-top: 1px solid #efefef; }
+    .comment-form input { flex-grow: 1; border: none; outline: none; background: transparent; }
+    .comment-form button { background: none; border: none; color: var(--primary-color); font-weight: 600; }
+    .delete-btn { font-size: 18px; color: var(--secondary-text-color); }
+    #modal-backdrop, #edit-profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; }
+    #modal-content { background: var(--card-background-color); padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; }
+    #modal-content h3 { margin-top: 0; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+    #modal-content input, #modal-content button, #modal-content textarea { display: block; width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+    #modal-content button { background: var(--primary-color); color: white; border: none; border-radius: 5px; font-weight: 600; }
+    #modal-content textarea { min-height: 80px; border: 1px solid var(--border-color); border-radius: 3px; }
+    #modal-close-btn { position: absolute; top: 5px; right: 10px; background: none; border: none; font-size: 24px; color: var(--secondary-text-color); }
+    #auth-view { text-align: center; padding-top: 50px; }
+    .auth-form { background: #fff; border: 1px solid var(--border-color); padding: 30px; margin: 20px; max-width: 350px; display: inline-block; text-align: center; }
+    .error-message { color: red; font-size: 14px; margin-top: 10px; }
+    .toggle-link { color: #00376b; cursor: pointer; font-weight: 600; }
+    #profile-view { padding: 20px; max-width: 800px; }
+    .profile-header { display: flex; align-items: center; margin-bottom: 24px; }
+    .profile-header img { width: 120px; height: 120px; border-radius: 50%; margin-right: 30px; }
+    .profile-info h2 { margin: 0 0 4px; font-size: 28px; }
+    .profile-info p { margin: 4px 0; color: var(--secondary-text-color); }
+    .profile-info .bio { color: var(--text-color); font-size: 16px; margin-top: 10px; }
+    .profile-info button { background: none; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; font-weight: 600; margin-top: 10px; }
+    .profile-posts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; border-top: 1px solid var(--border-color); padding-top: 20px; }
+    .grid-item img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 1/1; }
+    .verified-badge { color: var(--primary-color); }
   </style>
   <link href="https://fonts.googleapis.com/css?family=Grand+Hotel" rel="stylesheet">
 </head>
 <body>
 
-  <!-- All HTML structure from previous step is the same, just add the new Edit Profile Modal -->
   <div id="loading-view" class="view loader-container"><div class="loader"></div></div>
-  <div id="auth-view" class="view hidden"> <!-- Auth Forms HTML --> </div>
-  <main id="main-app-view" class="view hidden"> <!-- Header and View Containers --> </main>
-  <div id="modal-backdrop" class="hidden"> <!-- New Post Modal HTML --> </div>
 
-  <!-- NEW: Edit Profile Modal (initially hidden) -->
+  <div id="auth-view" class="view hidden">
+    <div id="login-form" class="auth-form"><h1>Ribbit</h1><input type="text" id="loginUser" placeholder="Username"><input type="password" id="loginPass" placeholder="Password"><button id="loginBtn" onclick="handleLogin()">Log In</button><p id="login-error" class="error-message hidden"></p><p>Don't have an account? <span class="toggle-link" onclick="toggleAuthForms()">Sign Up</span></p></div>
+    <div id="signup-form" class="auth-form hidden"><h1>Ribbit</h1><input type="text" id="signupUser" placeholder="Username"><input type="text" id="signupDisplay" placeholder="Display Name"><input type="password" id="signupPass" placeholder="Password"><button id="signupBtn" onclick="handleSignUp()">Sign Up</button><p id="signup-error" class="error-message hidden"></p><p>Have an account? <span class="toggle-link" onclick="toggleAuthForms()">Log In</span></p></div>
+  </div>
+
+  <main id="main-app-view" class="view hidden">
+    <header>
+      <h1 onclick="showFeedView()">Ribbit</h1>
+      <nav class="header-nav"><button onclick="openModal()">New Post</button><button id="my-profile-btn">Profile</button><button id="logout-btn" onclick="handleLogout()">Log Out</button></nav>
+    </header>
+    <div id="feed-view" class="hidden"><div id="feed"></div></div>
+    <div id="profile-view" class="hidden"></div>
+  </main>
+
+  <div id="modal-backdrop" class="hidden">
+    <div id="modal-content"><button id="modal-close-btn" onclick="closeModal()">×</button><h3>Create a New Post</h3><input type="file" id="imageFile" accept="image/*"><input type="text" id="caption" placeholder="Write a caption..."><button id="submitBtn" onclick="submitPost()">Post</button><div id="uploading-status" class="loader-container hidden"><div class="loader"></div></div></div>
+  </div>
+
   <div id="edit-profile-modal" class="hidden">
-      <div id="modal-content">
-        <button id="modal-close-btn" onclick="closeEditProfileModal()">×</button>
-        <h3>Edit Profile</h3>
-        <input type="text" id="editDisplayName" placeholder="Display Name">
-        <textarea id="editBio" placeholder="Write a short bio..."></textarea>
-        <button id="saveProfileBtn" onclick="handleProfileUpdate()">Save Changes</button>
-      </div>
+    <div id="modal-content">
+      <button id="modal-close-btn" onclick="closeEditProfileModal()">×</button>
+      <h3>Edit Profile</h3>
+      <input type="text" id="editDisplayName" placeholder="Display Name">
+      <textarea id="editBio" placeholder="Write a short bio..."></textarea>
+      <button id="saveProfileBtn" onclick="handleProfileUpdate()">Save Changes</button>
+    </div>
   </div>
 
   <script>
-    // THE KEY FOR GITHUB PAGES
-    // After you deploy, paste your Web App URL here.
-    const SCRIPT_URL = "YOUR_DEPLOYED_WEB_APP_URL"; // <-- PASTE YOUR URL HERE!
-
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvcLyleRDMM4XtCem1yoi4NE3yMu7ecG79_hlZtAgl5-eRJoCCmj12kodSPhviREMD/exec"; // <-- PASTE YOUR NEW URL HERE!
     let currentUser = null; let currentFile = null;
-    const ICONS = { /* ... Your SVG icons from before ... */ };
-
-    // This is the new API helper function. It replaces google.script.run
-    async function apiRequest(action, params = []) {
-      try {
-        const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, params }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
-        const result = await response.json();
-        if (result.status === 'error') throw new Error(result.message);
-        return result.data;
-      } catch (error) { console.error('API Request Error:', action, error); throw error; }
-    }
-
-    // --- All functions now use 'apiRequest' ---
+    const ICONS = { like: '<svg aria-label="Like" fill="currentColor" role="img" viewBox="0 0 24 24"><path d="M16.792 3.904A4.989 4.989 0 0 1 21.5 9.122c0 3.072-2.652 4.959-6.03 8.318-3.377 3.359-6.03 5.572-6.03 5.572s-2.653-2.213-6.03-5.572C.653 14.08 0 12.193 0 9.122a4.989 4.989 0 0 1 4.708-5.218 4.21 4.21 0 0 1 3.675 1.941c.84 1.175 2.48 1.175 3.32 0a4.21 4.21 0 0 1 3.675-1.941z"></path></svg>', liked: '<svg aria-label="Unlike" fill="red" role="img" viewBox="0 0 48 48"><path d="M34.6 3.9c-4.2 0-7.9 2.1-10.6 5.6-2.7-3.5-6.4-5.6-10.6-5.6C6 3.9 1.6 8.3 1.6 15.6c0 3.8 1.4 7.2 4.2 9.8 2.8 2.5 11.8 11.2 18.2 17.1 6.4-5.9 15.4-14.5 18.2-17.1 2.8-2.6 4.2-6 4.2-9.8.1-7.3-4.3-11.7-11.8-11.7z"></path></svg>', comment: '<svg aria-label="Comment" fill="currentColor" role="img" viewBox="0 0 24 24"><path d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path></svg>', delete: '<svg aria-label="Delete" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>'};
+    
+    async function apiRequest(action, params = []) { try { const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, params }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' }); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); const result = await response.json(); if (result.status === 'error') throw new Error(result.message); return result.data; } catch (error) { console.error('API Request Error:', action, error); throw error; } }
     document.addEventListener("DOMContentLoaded", initializeApp);
     function initializeApp(){ showView('loading-view'); apiRequest('checkUser').then(onUserCheck).catch(onInitializeError); }
     function onInitializeError(err){ alert("Could not connect to the API. Ensure SCRIPT_URL is correct and the project is deployed for 'Anyone'. Error: " + err.message); showView('auth-view'); }
     function onUserCheck(user){ if (user){ currentUser = user; document.getElementById('my-profile-btn').onclick = () => showProfile(currentUser.username); showView('main-app-view'); showFeedView(); } else { currentUser = null; showView('auth-view'); } }
-    
-    // --- View Management ---
-    function showView(viewId){ /* ... */ }
-    function showFeedView(){ /* ... */ }
-    async function showProfile(username){ /* ... */ }
-    
-    // --- Auth ---
-    async function handleLogin(){ /* ... uses apiRequest('logInUser', ...) ... */ }
-    async function handleSignUp(){ /* ... uses apiRequest('signUpUser', ...) ... */ }
+    function showView(viewId){ document.querySelectorAll('.view').forEach(v => v.classList.add('hidden')); document.getElementById(viewId).classList.remove('hidden'); }
+    function showFeedView(){ document.getElementById('feed-view').classList.remove('hidden'); document.getElementById('profile-view').classList.add('hidden'); loadFeed(); }
+    async function showProfile(username){ document.getElementById('profile-view').innerHTML = '<div class="loader-container"><div class="loader"></div></div>'; document.getElementById('feed-view').classList.add('hidden'); document.getElementById('profile-view').classList.remove('hidden'); try { const profileData = await apiRequest('getProfileData', [username]); displayProfile(profileData); } catch (err) { document.getElementById('profile-view').innerHTML = `<p>Could not load profile: ${err.message}</p>`; } }
+    function toggleAuthForms(){ document.getElementById('login-form').classList.toggle('hidden'); document.getElementById('signup-form').classList.toggle('hidden'); document.getElementById('login-error').classList.add('hidden'); document.getElementById('signup-error').classList.add('hidden'); }
+    async function handleLogin(){ const user = document.getElementById('loginUser').value, pass = document.getElementById('loginPass').value; if (!user || !pass) return; document.getElementById('loginBtn').disabled = true; try { const userData = await apiRequest('logInUser', [user, pass]); onUserCheck(userData); } catch(err) { onLoginError(err); } finally { document.getElementById('loginBtn').disabled = false; } }
+    function onLoginError(err){ document.getElementById('login-error').innerText = err.message; document.getElementById('login-error').classList.remove('hidden'); }
+    async function handleSignUp(){ const user = document.getElementById('signupUser').value, display = document.getElementById('signupDisplay').value, pass = document.getElementById('signupPass').value; if (!user || !display || !pass) return; document.getElementById('signupBtn').disabled = true; try { const userData = await apiRequest('signUpUser', [user, display, pass]); onUserCheck(userData); } catch (err) { onSignupError(err); } finally { document.getElementById('signupBtn').disabled = false; } }
+    function onSignupError(err){ document.getElementById('signup-error').innerText = err.message; document.getElementById('signup-error').classList.remove('hidden'); }
     function handleLogout(){ apiRequest('logOutUser').then(initializeApp); }
-    
-    // --- Post, Like, Comment Actions ---
-    function handleFileSelect(event){ /* ... */ }
-    async function submitPost(){ /* ... uses apiRequest('createPost', ...) ... */ }
-    function loadFeed(){ apiRequest('getFeedData').then(displayPosts); }
-    function handleToggleLike(button, postId){ apiRequest('toggleLike', [postId]).then(loadFeed); }
-    async function submitComment(postId){ /* ... uses apiRequest('addComment', ...) ... */ }
-    
-    // --- Display Functions ---
-    function displayPosts(posts){ /* ... */ }
-    function displayProfile(profile){
-      const view = document.getElementById('profile-view');
-      const editBtn = currentUser && currentUser.userId === profile.userId 
-        ? `<button onclick="openEditProfileModal(profile)">Edit Profile</button>` 
-        : '';
-      // ... build the rest of your profile HTML from before
-      // Make sure to add the 'editBtn' to the HTML string.
-      view.innerHTML = `<div class="profile-header"> ... ${editBtn} ... </div> ... `;
-    }
-
-    // --- NEW: Profile Customization Functions ---
-    function openEditProfileModal(profile) {
-      document.getElementById('editDisplayName').value = profile.displayName;
-      document.getElementById('editBio').value = profile.bio || '';
-      document.getElementById('edit-profile-modal').classList.remove('hidden');
-    }
-    function closeEditProfileModal() {
-      document.getElementById('edit-profile-modal').classList.add('hidden');
-    }
-    async function handleProfileUpdate() {
-      document.getElementById('saveProfileBtn').disabled = true;
-      const profileData = {
-        displayName: document.getElementById('editDisplayName').value,
-        bio: document.getElementById('editBio').value
-      };
-      try {
-        await apiRequest('updateUserProfile', [profileData]);
-        closeEditProfileModal();
-        showProfile(currentUser.username); // Refresh the profile view
-      } catch (err) {
-        alert("Error updating profile: " + err.message);
-      } finally {
-        document.getElementById('saveProfileBtn').disabled = false;
-      }
-    }
-    
-    // --- (Include ALL other JS functions from the complete code in my previous response) ---
-    // Make sure you have functions like onLoginError, onSignupError, timeAgo, openModal, closeModal, etc.
+    function handleFileSelect(event){ const file = event.target.files[0]; if (!file){ currentFile = null; return; } const reader = new FileReader(); reader.onload = e => { const data = e.target.result.split(','); currentFile = { name: file.name, mimeType: file.type, data: data[1] }; }; reader.readAsDataURL(file); }
+    async function submitPost(){ const caption = document.getElementById('caption').value; if (!currentFile){ alert('Please select an image to upload.'); return; } if (!caption){ alert('Please write a caption.'); return; } document.getElementById('uploading-status').classList.remove('hidden'); document.getElementById('submitBtn').disabled = true; try { await apiRequest('createPost', [currentFile, caption]); onPostSuccess(); } catch(err) { onPostError(err); } }
+    function onPostSuccess(){ document.getElementById('uploading-status').classList.add('hidden'); document.getElementById('submitBtn').disabled = false; document.getElementById('caption').value = ''; document.getElementById('imageFile').value = ''; currentFile = null; closeModal(); loadFeed(); }
+    function onPostError(err){ alert("Error creating post: " + err.message); document.getElementById('uploading-status').classList.add('hidden'); document.getElementById('submitBtn').disabled = false; }
+    function loadFeed(){ document.getElementById('feed').innerHTML = '<div class="loader-container"><div class="loader"></div></div>'; apiRequest('getFeedData').then(displayPosts); }
+    function displayPosts(posts){ const feed = document.getElementById('feed'); feed.innerHTML = ''; if (!posts || posts.length === 0){ feed.innerHTML = '<p style="text-align: center; color: #8e8e8e;">No posts yet. Be the first!</p>'; return; } posts.forEach(post => { const postElement = document.createElement('div'); postElement.className = 'post'; const verifiedBadge = post.isVerified ? '<span class="verified-badge">✔️</span>' : ''; const likeButton = `<button class="action-btn" onclick="handleToggleLike(this, '${post.postId}')">${post.isLikedByCurrentUser ? ICONS.liked : ICONS.like}</button>`; const deleteButton = post.authorId === currentUser.userId ? `<button class="action-btn" onclick="handleDeletePost('${post.postId}')">${ICONS.delete}</button>` : ''; let commentsHtml = ''; post.comments.forEach(c => { const commentDeleteBtn = c.commenterId === currentUser.userId ? `<button class="action-btn delete-btn" onclick="handleDeleteComment('${c.commentId}')">×</button>` : ''; commentsHtml += `<div class="comment"><p><span class="username" onclick="showProfile('${c.commenterName}')">${c.commenterName}</span><span>${c.commentText}</span></p>${commentDeleteBtn}</div>`; }); postElement.innerHTML = `<div class="post-header"><div class="user-info" onclick="showProfile('${post.authorUsername}')"><img src="${post.authorAvatar}" alt="avatar"><span>${post.authorDisplayName}${verifiedBadge}</span></div>${deleteButton}</div><div class="post-image"><img src="${post.imageUrl}" alt="post image"></div><div class="post-actions">${likeButton}<button class="action-btn">${ICONS.comment}</button></div><div class="likes">${post.likeCount} likes</div><div class="caption-container"><span class="username" onclick="showProfile('${post.authorUsername}')">${post.authorDisplayName}</span><span>${post.caption}</span></div><div class="timestamp">${timeAgo(post.timestamp)}</div><div class="comments-section">${commentsHtml}</div><div class="comment-form"><input type="text" id="comment-input-${post.postId}" placeholder="Add a comment..."><button onclick="submitComment('${post.postId}')">Post</button></div>`; feed.appendChild(postElement); }); }
+    function displayProfile(profile){ const view = document.getElementById('profile-view'); const editBtn = currentUser && currentUser.userId === profile.userId ? `<button onclick='openEditProfileModal(${JSON.stringify(profile)})'>Edit Profile</button>` : ''; const bioHTML = profile.bio ? `<p class="bio">${profile.bio}</p>` : ''; let postsGridHtml = ''; if (profile.posts.length > 0){ profile.posts.forEach(p => { postsGridHtml += `<div class="grid-item"><img src="${p.imageUrl}" alt="post"></div>`; }); } else { postsGridHtml = '<p style="color: #8e8e8e; grid-column: 1 / 4; text-align: center;">No posts yet.</p>'; } view.innerHTML = `<div class="profile-header"><img src="${profile.avatar}" alt="profile picture"><div class="profile-info"><h2>${profile.displayName} ${profile.isVerified ? '<span class="verified-badge">✔️</span>' : ''}</h2><p>@${profile.username}</p>${bioHTML}${editBtn}</div></div><div class="profile-posts-grid">${postsGridHtml}</div>`; }
+    function handleToggleLike(button, postId){ button.disabled = true; apiRequest('toggleLike', [postId]).then(loadFeed); }
+    async function submitComment(postId){ const input = document.getElementById(`comment-input-${postId}`); const commentText = input.value; if (!commentText) return; input.disabled = true; await apiRequest('addComment', [postId, commentText]); input.disabled = false; input.value = ''; loadFeed(); }
+    function handleDeletePost(postId){ if (confirm("Are you sure you want to delete this post? This cannot be undone.")) { apiRequest('deletePost', [postId]).then(loadFeed); } }
+    function handleDeleteComment(commentId){ if (confirm("Are you sure you want to delete this comment?")) { apiRequest('deleteComment', [commentId]).then(loadFeed); } }
+    function openModal(){ document.getElementById('modal-backdrop').classList.remove('hidden'); document.getElementById('imageFile').addEventListener("change", handleFileSelect); }
+    function closeModal(){ document.getElementById('modal-backdrop').classList.add('hidden'); }
+    function openEditProfileModal(profile) { document.getElementById('editDisplayName').value = profile.displayName; document.getElementById('editBio').value = profile.bio || ''; document.getElementById('edit-profile-modal').classList.remove('hidden'); }
+    function closeEditProfileModal() { document.getElementById('edit-profile-modal').classList.add('hidden'); }
+    async function handleProfileUpdate() { document.getElementById('saveProfileBtn').disabled = true; const profileData = { displayName: document.getElementById('editDisplayName').value, bio: document.getElementById('editBio').value }; try { await apiRequest('updateUserProfile', [profileData]); closeEditProfileModal(); showProfile(currentUser.username); } catch (err) { alert("Error updating profile: " + err.message); } finally { document.getElementById('saveProfileBtn').disabled = false; } }
+    function timeAgo(isoString){ const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); let interval = seconds / 31536000; if (interval > 1) return Math.floor(interval) + " years ago"; interval = seconds / 2592000; if (interval > 1) return Math.floor(interval) + " months ago"; interval = seconds / 86400; if (interval > 1) return Math.floor(interval) + " days ago"; interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + " hours ago"; interval = seconds / 60; if (interval > 1) return Math.floor(interval) + " minutes ago"; return Math.floor(seconds) + " seconds ago"; }
   </script>
 </body>
 </html>
