@@ -78,8 +78,8 @@
 
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; justify-content: flex-start; align-items: flex-start;
-            padding-top: 100px; box-sizing: border-box;
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: 100px 20px 0 20px; box-sizing: border-box;
             transition: opacity var(--page-transition-speed) ease-in-out, transform var(--page-transition-speed) ease-in-out;
             opacity: 0; transform: scale(1.1); pointer-events: none;
             overflow-y: auto;
@@ -194,23 +194,23 @@
     <div id="settings-view" class="view">
         <div class="settings-container">
             <div class="setting-item">
-                <label for="update-app-button">Check for updates</label>
-                <button id="update-app-button">Update App</button>
-            </div>
-            <div class="setting-item">
-                <label>Version</label>
-                <span class="version-text">v0.1.1 Beta</span>
-            </div>
-            <div class="setting-item">
-                <label for="clear-data-button">Erase all liked quotes</label>
-                <button id="clear-data-button">Erase</button>
-            </div>
-            <div class="setting-item">
                 <label for="theme-toggle">Light Mode</label>
                 <label class="toggle-switch">
                     <input type="checkbox" id="theme-toggle">
                     <span class="slider"></span>
                 </label>
+            </div>
+            <div class="setting-item">
+                <label for="update-app-button">Check for updates</label>
+                <button id="update-app-button">Update App</button>
+            </div>
+            <div class="setting-item">
+                <label>Version</label>
+                <span class="version-text">v0.1.2 Beta</span>
+            </div>
+            <div class="setting-item">
+                <label for="clear-data-button">Erase all liked quotes</label>
+                <button id="clear-data-button">Erase</button>
             </div>
         </div>
     </div>
@@ -297,6 +297,7 @@
                            saveFavorites();
                         }
                     } else if (deckType === 'liked' && isFavorited) {
+                        const unlikedIndex = favorites.findIndex(fav => fav.id === quoteId);
                         favorites = favorites.filter(fav => fav.id !== quoteId);
                         saveFavorites();
                         animateFeedback(card, e, 'heart_broken', 'unheart');
@@ -306,6 +307,7 @@
                            setTimeout(() => {
                                 card.remove();
                                 this.reset();
+                                this.currentIndex = unlikedIndex;
                                 this.start();
                            }, animationSpeed);
                         }, 300);
@@ -336,8 +338,8 @@
                     } else {
                         currentDeck = [...favorites];
                         history = [];
-                        this.currentIndex = -1;
-                        quote = currentDeck.length > 0 ? getNextCard.call(this) : null;
+                        if (this.currentIndex >= currentDeck.length) this.currentIndex = 0;
+                        quote = currentDeck.length > 0 ? currentDeck[this.currentIndex] : null;
                     }
                     
                     if (!quote) {
