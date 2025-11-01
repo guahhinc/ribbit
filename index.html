@@ -79,7 +79,7 @@
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; justify-content: flex-start; align-items: flex-start;
-            padding: 100px 20px 0 20px; box-sizing: border-box;
+            padding-top: 100px; box-sizing: border-box;
             transition: opacity var(--page-transition-speed) ease-in-out, transform var(--page-transition-speed) ease-in-out;
             opacity: 0; transform: scale(1.1); pointer-events: none;
             overflow-y: auto;
@@ -199,7 +199,7 @@
             </div>
             <div class="setting-item">
                 <label>Version</label>
-                <span class="version-text">v1.0.0</span>
+                <span class="version-text">v0.1.1 Beta</span>
             </div>
             <div class="setting-item">
                 <label for="clear-data-button">Erase all liked quotes</label>
@@ -267,8 +267,8 @@
                         return currentDeck[0];
                     } else { // Liked deck
                         if(currentDeck.length === 0) return null;
-                        currentIndex = (this.currentIndex + 1) % currentDeck.length;
-                        return currentDeck[currentIndex];
+                        this.currentIndex = (this.currentIndex + 1) % currentDeck.length;
+                        return currentDeck[this.currentIndex];
                     }
                 }
 
@@ -279,8 +279,8 @@
                         return currentDeck[0];
                     } else { // Liked deck
                          if(currentDeck.length === 0) return null;
-                        currentIndex = (this.currentIndex - 1 + currentDeck.length) % currentDeck.length;
-                        return currentDeck[currentIndex];
+                        this.currentIndex = (this.currentIndex - 1 + currentDeck.length) % currentDeck.length;
+                        return currentDeck[this.currentIndex];
                     }
                 }
 
@@ -289,11 +289,13 @@
                     if (quoteId < 0) return;
                     const isFavorited = favorites.some(fav => fav.id === quoteId);
 
-                    if (deckType === 'main' && !isFavorited) {
-                        const quote = masterQuotes.find(q => q.id === quoteId);
-                        if (quote) favorites.push(quote);
-                        saveFavorites();
+                    if (deckType === 'main') {
                         animateFeedback(card, e, 'favorite', 'heart');
+                        if (!isFavorited) {
+                           const quote = masterQuotes.find(q => q.id === quoteId);
+                           if (quote) favorites.push(quote);
+                           saveFavorites();
+                        }
                     } else if (deckType === 'liked' && isFavorited) {
                         favorites = favorites.filter(fav => fav.id !== quoteId);
                         saveFavorites();
