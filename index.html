@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Mindful Decks</title>
+
+    <style>
+        :root {
+            --card-width: 90vw;
+            --card-max-width: 380px;
+            --card-height: 70vh;
+            --card-max-height: 600px;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000000;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+        .view.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .card-container {
+            position: relative;
+            width: var(--card-width);
+            max-width: var(--card-max-width);
+            height: var(--card-height);
+            max-height: var(--card-max-height);
+        }
+
+        .card {
+            position: absolute; width: 100%; height: 100%;
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            color: white;
+            display: flex; justify-content: center; align-items: center;
+            padding: 30px; box-sizing: border-box; text-align: center;
+            font-size: 1.7rem; font-weight: 300; line-height: 1.5;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            cursor: grab; user-select: none; will-change: transform;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease;
+            overflow: hidden;
+        }
+
+        .card.dragging { transition: none; }
+        .card.entering-bottom { transform: translateY(100vh) scale(0.8); opacity: 0; }
+        .card.entering-left { transform: translateX(-100vw) scale(0.8); opacity: 0; }
+        
+        @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+        .feedback-animation {
+            position: absolute; font-size: 5rem;
+            transform: translate(-50%, -50%) scale(0.5);
+            pointer-events: none;
+            animation: feedback-beat 0.6s ease-in-out;
+        }
+        .feedback-animation.heart { color: white; }
+        .feedback-animation.unheart { color: #888; animation-name: feedback-fade; }
+
+        @keyframes feedback-beat {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+        }
+        @keyframes feedback-fade {
+             0% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+
+        .nav-button {
+            position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
+            padding: 12px 25px; font-size: 1rem;
+            background-color: rgba(30, 30, 30, 0.7); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px; color: white; cursor: pointer; backdrop-filter: blur(10px); z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="main-view" class="view active">
+        <div id="main-card-container" class="card-container"></div>
+        <button id="view-liked-button" class="nav-button">Liked</button>
+    </div>
+
+    <div id="liked-view" class="view">
+        <div id="liked-card-container" class="card-container"></div>
+        <button id="close-liked-button" class="nav-button">Done</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const masterQuotes = [
+                { id: 1, text: "The secret of getting ahead is getting started.", colors: ['#2c3e50', '#4ca1af'] }, { id: 2, text: "The only way to do great work is to love what you do.", colors: ['#8E2DE2', '#4A00E0'] }, { id: 3, text: "Act as if what you do makes a difference. It does.", colors: ['#159957', '#155799'] }, { id: 4, text: "Believe you can and you're halfway there.", colors: ['#cb2d3e', '#ef473a'] }, { id: 5, text: "The journey of a thousand miles begins with a single step.", colors: ['#00b09b', '#96c93d'] }, { id: 6, text: "What you get by achieving your goals is not as important as what you become.", colors: ["#434343", "#000000"] }, { id: 7, text: "The best time to plant a tree was 20 years ago. The second best time is now.", colors: ["#134E5E", "#71B280"] }, { id: 8, text: "Your limitation is only your imagination.", colors: ["#ff4e50", "#f9d423"] }, { id: 9, text: "Strive not to be a success, but rather to be of value.", colors: ["#c31432", "#240b36"] }, { id: 10, text: "The mind is everything. What you think you become.", colors: ["#614385", "#516395"] }, { id: 11, text: "An unexamined life is not worth living.", colors: ["#360033", "#0b8793"] }, { id: 12, text: "Eighty percent of success is showing up.", colors: ["#1c92d2", "#f2fcfe"] }, { id: 13, text: "You miss 100% of the shots you don't take.", colors: ["#f12711", "#f5af19"] }, { id: 14, text: "The only person you are destined to become is the person you decide to be.", colors: ["#7F00FF", "#E100FF"] }, { id: 15, text: "Everything you can imagine is real.", colors: ["#1A2980", "#26D0CE"] }, { id: 16, text: "Do what you can, with what you have, where you are.", colors: ["#00467F", "#A5CC82"] }, { id: 17, text: "The best revenge is massive success.", colors: ["#ED213A", "#93291E"] }, { id: 18, text: "If you are not willing to risk the usual you will have to settle for the ordinary.", colors: ["#485563", "#29323c"] }, { id: 19, text: "All our dreams can come true, if we have the courage to pursue them.", colors: ["#e52d27", "#b31217"] }, { id: 20, text: "Don't watch the clock; do what it does. Keep going.", colors: ["#0F2027", "#2C5364"] }, { id: 21, text: "The future belongs to those who believe in the beauty of their dreams.", colors: ["#FF8008", "#FFC837"] }, { id: 22, text: "There are no shortcuts to any place worth going.", colors: ["#005C97", "#363795"] }, { id: 23, text: "Success is not in what you have, but who you are.", colors: ["#00c3ff", "#ffff1c"] }, { id: 24, text: "In the middle of difficulty lies opportunity.", colors: ["#2C3E50", "#FD746C"] }, { id: 25, text: "It is never too late to be what you might have been.", colors: ["#5614B0", "#DBD65C"] }, { id: 26, text: "You must be the change you wish to see in the world.", colors: ["#348F50", "#56B4D3"] }, { id: 27, text: "Fall seven times and stand up eight.", colors: ["#283c86", "#45a247"] }, { id: 28, text: "The only impossible journey is the one you never begin.", colors: ["#1e3c72", "#2a5298"] }, { id: 29, text: "Happiness is not something ready made. It comes from your own actions.", colors: ["#f857a6", "#ff5858"] }, { id: 30, text: "To live is the rarest thing in the world. Most people exist, that is all.", colors: ["#1D2B64", "#F8CDDA"] }, { id: 31, text: "Turn your wounds into wisdom.", colors: ["#5C258D", "#4389A2"] }, { id: 32, text: "Wherever you go, go with all your heart.", colors: ["#e96443", "#904e95"] }, { id: 33, text: "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.", colors: ["#3a6186", "#89253e"] }, { id: 34, text: "The purpose of our lives is to be happy.", colors: ["#2980B9", "#6DD5FA"] }, { id: 35, text: "You will face many defeats in life, but never let yourself be defeated.", colors: ["#536976", "#292E49"] }, { id: 36, text: "Life is what happens when you're busy making other plans.", colors: ["#BBD2C5", "#536976"] }, { id: 37, text: "The greatest glory in living lies not in never falling, but in rising every time we fall.", colors: ["#70e1f5", "#ffd194"] }, { id: 38, text: "In the end, it's not the years in your life that count. It's the life in your years.", colors: ["#4776E6", "#8E54E9"] }, { id: 39, text: "Life is a succession of lessons which must be lived to be understood.", colors: ["#ff7e5f", "#feb47b"] }, { id: 40, text: "You have within you right now, everything you need to deal with whatever the world can throw at you.", colors: ["#314755", "#26a0da"] },
+                { id: 41, text: "The only thing we have to fear is fear itself.", colors: ['#536976', '#BB2222'] }, { id: 42, text: "To err is human, to forgive divine.", colors: ['#f8b500', '#fceabb'] }, { id: 43, text: "What we think, we become.", colors: ['#373B44', '#4286f4'] }, { id: 44, text: "Be the reason someone smiles today.", colors: ['#FC466B', '#3F5EFB'] }, { id: 45, text: "Simplicity is the ultimate sophistication.", colors: ['#D3CCE3', '#E9E4F0'] }, { id: 46, text: "Whatever you are, be a good one.", colors: ['#3D7EAA', '#FFE47A'] }, { id: 47, text: "Tough times never last, but tough people do.", colors: ['#141E30', '#243B55'] }, { id: 48, text: "Problems are not stop signs, they are guidelines.", colors: ['#1c92d2', '#f2fcfe'] }, { id: 49, text: "Have enough courage to start and enough heart to finish.", colors: ['#ff6a00', '#ee0979'] }, { id: 50, text: "Hate comes from intimidation, love comes from appreciation.", colors: ['#da4453', '#89216b'] }, { id: 51, text: "Determine your priorities and focus on them.", colors: ['#000428', '#004e92'] }, { id: 52, text: "Be so good they can't ignore you.", colors: ['#232526', '#414345'] }, { id: 53, text: "Yesterday you said tomorrow. Just do it.", colors: ['#F2994A', '#F2C94C'] }, { id: 54, text: "The secret to life is to fall in love with as many things as possible.", colors: ['#FF416C', '#FF4B2B'] }, { id: 55, text: "I could agree with you but then we’d both be wrong.", colors: ['#2b5876', '#4e4376'] }, { id: 56, text: "Light travels faster than sound. This is why some people appear bright until you hear them speak.", colors: ['#F00000', '#DC281E'] }, { id: 57, text: "Well begun is half done.", colors: ['#42275a', '#734b6d'] }, { id: 58, text: "He who is brave is free.", colors: ['#3C3B3F', '#605C3C'] }, { id: 59, text: "The truest wisdom is a resolute determination.", colors: ['#1e130c', '#9a8478'] }, { id: 60, text: "Life is a flower of which love is the honey.", colors: ['#f953c6', '#b91d73'] }, { id: 61, text: "All limitations are self-imposed.", colors: ['#3D7EAA', '#FFE47A'] }, { id: 62, text: "Dream big and dare to fail.", colors: ['#43C6AC', '#191654'] }, { id: 63, text: "Every moment is a fresh beginning.", colors: ['#007991', '#78ffd6'] }, { id: 64, text: "Die with memories, not dreams.", colors: ['#2948ff', '#396afc'] }, { id: 65, text: "What you do today can improve all your tomorrows.", colors: ['#a1c4fd', '#c2e9fb'] }, { id: 66, text: "A smooth sea never made a skilled sailor.", colors: ['#005AA7', '#FFFDE4'] }, { id: 67, text: "Every day is a second chance.", colors: ['#fdfc47', '#24fe41'] }, { id: 68, text: "It's not the load that breaks you down, it's the way you carry it.", colors: ['#000000', '#53346D'] }, { id: 69, text: "The harder you work for something, the greater you'll feel when you achieve it.", colors: ['#753a88', '#cc2b5e'] }, { id: 70, text: "Dream it. Wish it. Do it.", colors: ['#4568DC', '#B06AB3'] }, { id: 71, text: "Push yourself, because no one else is going to do it for you.", colors: ['#2193b0', '#6dd5ed'] }, { id: 72, "text": "Great things never come from comfort zones.", "colors": ["#C04848", "#480048"] }, { id: 73, "text": "The key to success is to focus on goals, not obstacles.", "colors": ["#42275a", "#734b6d"] }, { id: 74, "text": "Your attitude determines your direction.", "colors": ["#5f2c82", "#49a09d"] }, { id: 75, "text": "Make each day your masterpiece.", "colors": ["#1FA2FF", "#A6FFCB"] }, { id: 76, "text": "Never regret anything that made you smile.", "colors": ["#DD2476", "#FF512F"] }, { id: 77, "text": "Once you choose hope, anything’s possible.", "colors": ["#00B4DB", "#0083B0"] }, { id: 78, "text": "Try to be a rainbow in someone's cloud.", "colors": ["#f80759", "#bc4e9c"] }, { id: 79, "text": "Stars can't shine without darkness.", "colors": ["#000000", "#4A00E0"] }, { id: 80, "text": "It is better to travel well than to arrive.", "colors": ["#40E0D0", "#FF8C00"] },
+                { id: 81, text: "Life is short, and it is up to you to make it sweet.", colors: ["#f2709c", "#ff9472"] }, { id: 82, text: "The best way to get started is to quit talking and begin doing.", colors: ["#4facfe", "#00f2fe"] }, { id: 83, text: "Don't let yesterday take up too much of today.", colors: ["#ff9a9e", "#fecfef"] }, { id: 84, text: "We may encounter many defeats but we must not be defeated.", colors: ["#ffdde1", "#ee9ca7"] }, { id: 85, text: "The man who has confidence in himself gains the confidence of others.", colors: ["#3f2b96", "#a8c0ff"] }, { id: 86, text: "Creativity is intelligence having fun.", colors: ["#11998e", "#38ef7d"] }, { id: 87, text: "If you want to lift yourself up, lift up someone else.", colors: ["#fceabb", "#f8b500"] }, { id: 88, text: "What you lack in talent can be made up with desire, hustle and giving 110% all the time.", colors: ["#eb3349", "#f45c43"] }, { id: 89, text: "A person who never made a mistake never tried anything new.", colors: ["#4b79a1", "#283e51"] }, { id: 90, text: "It's not whether you get knocked down, it's whether you get up.", colors: ["#76b852", "#8DC26F"] }, { id: 91, text: "If you're going through hell, keep going.", colors: ["#e43a15", "#e65245"] }, { id: 92, text: "The most difficult thing is the decision to act, the rest is merely tenacity.", colors: ["#cc2b5e", "#753a88"] }, { id: 93, text: "It is during our darkest moments that we must focus to see the light.", colors: ["#2c3e50", "#fd746c"] }, { id: 94, "text": "An obstacle is often a stepping stone.", "colors": ["#757F9A", "#D7DDE8"] }, { id: 95, "text": "You do not find the happy life. You make it.", "colors": ["#FFC371", "#FF5F6D"] }, { id: 96, "text": "Let the beauty of what you love be what you do.", "colors": ["#06beb6", "#48b1bf"] }, { id: 97, "text": "The world is full of nice people. If you can't find one, be one.", "colors": ["#e55d87", "#5fc3e4"] }, { id: 98, "text": "No matter what you're going through, there's a light at the end of the tunnel.", "colors": ["#F3F9A7", "#CAC531"] }, { id: 99, "text": "Kindness is a language which the deaf can hear and the blind can see.", "colors": ["#1c4229", "#248232"] }, { id: 100, "text": "Nothing is impossible. The word itself says 'I'm possible!'", "colors": ["#00c6ff", "#0072ff"] }
+            ];
+
+            const mainView = document.getElementById('main-view');
+            const likedView = document.getElementById('liked-view');
+            const mainCardContainer = document.getElementById('main-card-container');
+            const likedCardContainer = document.getElementById('liked-card-container');
+
+            let favorites = JSON.parse(localStorage.getItem('mindfulDecksFavorites')) || [];
+            let mainDeck = [];
+            let mainHistory = [];
+
+            const saveFavorites = () => localStorage.setItem('mindfulDecksFavorites', JSON.stringify(favorites));
+
+            function createCardElement(quote) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.background = `linear-gradient(160deg, ${quote.colors[0]}, ${quote.colors[1]})`;
+                card.dataset.id = quote.id;
+                card.innerHTML = `<span>${quote.text}</span>`;
+                return card;
+            }
+
+            function initDeck(deckManager) {
+                const { container, getNextCard, getPreviousCard, onDoubleTap } = deckManager;
+                container.innerHTML = '';
+
+                function showCard(getCardFn, animationClass) {
+                    const quote = getCardFn();
+                    if (!quote) {
+                        if (deckManager.createEmptyCard) deckManager.createEmptyCard();
+                        return;
+                    }
+                    const card = createCardElement(quote);
+                    card.classList.add(animationClass);
+                    container.appendChild(card);
+                    setTimeout(() => card.classList.remove(animationClass), 20);
+                    initCardListeners(card, getCardFn, animationClass);
+                }
+
+                function initCardListeners(card) {
+                    let startX = 0, startY = 0, isDragging = false, isTap = true, lastTap = 0;
+
+                    function onPointerDown(e) {
+                        e.preventDefault();
+                        const currentTime = new Date().getTime();
+                        if (currentTime - lastTap < 300) { // Double tap
+                            lastTap = 0; // Reset
+                            onDoubleTap(card, e);
+                            return;
+                        }
+                        lastTap = currentTime;
+
+                        isDragging = true;
+                        isTap = true;
+                        startX = e.pageX ?? e.touches[0].pageX;
+                        startY = e.pageY ?? e.touches[0].pageY;
+                        card.classList.add('dragging');
+
+                        document.addEventListener('mousemove', onPointerMove, { passive: false });
+                        document.addEventListener('touchmove', onPointerMove, { passive: false });
+                        document.addEventListener('mouseup', onPointerEnd);
+                        document.addEventListener('touchend', onPointerEnd);
+                    }
+
+                    function onPointerMove(e) {
+                        if (!isDragging) return;
+                        e.preventDefault();
+                        const currentX = e.pageX ?? e.touches[0].pageX;
+                        const currentY = e.pageY ?? e.touches[0].pageY;
+                        const deltaX = currentX - startX;
+                        const deltaY = currentY - startY;
+
+                        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                            isTap = false;
+                        }
+                        card.style.transform = `translateX(${deltaX}px) rotate(${deltaX / 20}deg)`;
+                    }
+
+                    function onPointerEnd(e) {
+                        if (!isDragging) return;
+                        isDragging = false;
+                        card.classList.remove('dragging');
+                        document.removeEventListener('mousemove', onPointerMove); document.removeEventListener('touchmove', onPointerMove);
+                        document.removeEventListener('mouseup', onPointerEnd); document.removeEventListener('touchend', onPointerEnd);
+
+                        const deltaX = (e.pageX ?? e.changedTouches?.[0].pageX) - startX;
+
+                        if (!isTap && Math.abs(deltaX) > window.innerWidth / 4) {
+                            const direction = deltaX > 0 ? 1 : -1;
+                            
+                            if (direction === 1 && !deckManager.canGoBack()) {
+                                card.style.transform = '';
+                                return;
+                            }
+                            
+                            card.style.transition = 'transform 0.4s ease-out';
+                            card.style.transform = `translateX(${direction * window.innerWidth}px) rotate(${direction * 30}deg)`;
+                            
+                            setTimeout(() => {
+                                card.remove();
+                                const getCardFn = direction === -1 ? getNextCard : getPreviousCard;
+                                showCard(getCardFn, direction === -1 ? 'entering-bottom' : 'entering-left');
+                            }, 400);
+                        } else {
+                            card.style.transform = '';
+                        }
+                    }
+                    card.addEventListener('mousedown', onPointerDown);
+                    card.addEventListener('touchstart', onPointerDown, { passive: true });
+                }
+                showCard(getNextCard, 'entering-bottom');
+            }
+
+            const mainDeckManager = {
+                container: mainCardContainer,
+                canGoBack: () => mainHistory.length > 0,
+                getNextCard: () => {
+                    const currentCardEl = mainCardContainer.querySelector('.card');
+                    if (currentCardEl) {
+                        const currentQuote = masterQuotes.find(q => q.id == currentCardEl.dataset.id);
+                        if(currentQuote) mainHistory.push(currentQuote);
+                    }
+                    if (mainDeck.length === 0) {
+                        mainDeck.push(...masterQuotes.sort(() => Math.random() - 0.5));
+                    }
+                    return mainDeck.shift();
+                },
+                getPreviousCard: () => {
+                    const currentCardEl = mainCardContainer.querySelector('.card');
+                    if(currentCardEl){
+                        const currentQuote = masterQuotes.find(q => q.id == currentCardEl.dataset.id);
+                        if(currentQuote) mainDeck.unshift(currentQuote);
+                    }
+                    return mainHistory.pop();
+                },
+                onDoubleTap: (card, e) => {
+                    const quoteId = parseInt(card.dataset.id);
+                    if (favorites.some(fav => fav.id === quoteId)) return;
+                    
+                    const quote = masterQuotes.find(q => q.id === quoteId);
+                    if(quote) favorites.push(quote);
+                    saveFavorites();
+                    
+                    const rect = card.getBoundingClientRect();
+                    const x = (e.clientX ?? e.touches[0].clientX) - rect.left;
+                    const y = (e.clientY ?? e.touches[0].clientY) - rect.top;
+                    const heart = document.createElement('div');
+                    heart.className = 'feedback-animation heart';
+                    heart.innerHTML = '❤️';
+                    heart.style.left = `${x}px`;
+                    heart.style.top = `${y}px`;
+                    card.appendChild(heart);
+                    heart.addEventListener('animationend', () => heart.remove());
+                }
+            };
+
+            let likedDeckManager = {
+                container: likedCardContainer,
+                currentIndex: 0,
+                canGoBack() { return favorites.length > 1; },
+                getNextCard() {
+                    if (favorites.length === 0) return null;
+                    this.currentIndex = (this.currentIndex + 1) % favorites.length;
+                    return favorites[this.currentIndex];
+                },
+                getPreviousCard() {
+                    if (favorites.length === 0) return null;
+                    this.currentIndex = (this.currentIndex - 1 + favorites.length) % favorites.length;
+                    return favorites[this.currentIndex];
+                },
+                onDoubleTap(card, e) {
+                    const quoteId = parseInt(card.dataset.id);
+                    const unlikedIndex = favorites.findIndex(fav => fav.id === quoteId);
+                    if(unlikedIndex === -1) return;
+                    
+                    favorites = favorites.filter(fav => fav.id !== quoteId);
+                    saveFavorites();
+                    
+                    const rect = card.getBoundingClientRect();
+                    const x = (e.clientX ?? e.touches[0].clientX) - rect.left;
+                    const y = (e.clientY ?? e.touches[0].clientY) - rect.top;
+                    const unheart = document.createElement('div');
+                    unheart.className = 'feedback-animation unheart';
+                    unheart.innerHTML = '💔';
+                    unheart.style.left = `${x}px`;
+                    unheart.style.top = `${y}px`;
+                    card.appendChild(unheart);
+                    
+                    setTimeout(() => {
+                        card.style.transform = `translateY(100vh) rotate(30deg)`;
+                        card.style.opacity = 0;
+                        setTimeout(() => {
+                            card.remove();
+                            this.currentIndex = unlikedIndex % (favorites.length || 1);
+                            initDeck(this);
+                        }, 400);
+                    }, 300);
+                },
+                createEmptyCard() {
+                    const card = createCardElement({id: -1, text: "Double-tap cards on the main screen to add them here.", colors: ["#434343", "#000000"]});
+                    likedCardContainer.appendChild(card);
+                }
+            };
+
+            document.getElementById('view-liked-button').addEventListener('click', () => {
+                likedDeckManager.currentIndex = -1; // So that getNextCard starts at 0
+                initDeck(likedDeckManager);
+                mainView.classList.remove('active');
+                likedView.classList.add('active');
+            });
+            
+            document.getElementById('close-liked-button').addEventListener('click', () => {
+                mainView.classList.add('active');
+                likedView.classList.remove('active');
+            });
+            
+            initDeck(mainDeckManager);
+        });
+    </script>
+</body>
+</html>
