@@ -17,8 +17,9 @@
         :root {
             --background-color: #000000;
             --text-color: #ffffff;
-            --header-icon-bg: rgba(30, 30, 30, 0.7);
-            --header-icon-border: rgba(255, 255, 255, 0.1);
+            --footer-bg: rgba(10, 10, 10, 0.8);
+            --footer-border: rgba(255, 255, 255, 0.1);
+            --inactive-icon-color: #777;
             --setting-item-bg: #1e1e1e;
             
             --card-width: 90vw;
@@ -32,8 +33,9 @@
         body.light-mode {
             --background-color: #f0f2f5;
             --text-color: #1c1e21;
-            --header-icon-bg: rgba(255, 255, 255, 0.7);
-            --header-icon-border: rgba(0, 0, 0, 0.1);
+            --footer-bg: rgba(255, 255, 255, 0.8);
+            --footer-border: rgba(0, 0, 0, 0.1);
+            --inactive-icon-color: #aaa;
             --setting-item-bg: #ffffff;
         }
 
@@ -51,41 +53,17 @@
           font-variation-settings: 'FILL' 1;
         }
 
-        .header {
-            position: fixed; top: 0; left: 0; width: 100%;
-            padding: 15px 20px; box-sizing: border-box; z-index: 100;
-        }
-        body.light-mode .header {
-             background: linear-gradient(180deg, rgba(240,242,245,0.5) 0%, rgba(240,242,245,0) 100%);
-        }
-        body:not(.light-mode) .header {
-            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
-        }
-        .header-content {
-            display: flex; justify-content: space-between; align-items: center; width: 100%;
-        }
-        .page-title { margin: 0; font-size: 1.8rem; font-weight: 600; }
-        .header-icons { display: flex; gap: 10px; }
-        .header-icon-button {
-            background-color: var(--header-icon-bg);
-            border: 1px solid var(--header-icon-border);
-            color: var(--text-color); cursor: pointer; width: 44px; height: 44px;
-            border-radius: 50%; display: flex; justify-content: center;
-            align-items: center; backdrop-filter: blur(10px);
-        }
-        .header-icon-button .material-symbols-outlined { font-size: 28px; }
-        #liked-header, #settings-header { display: none; }
-
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: flex-start;
-            padding: 100px 20px 0 20px; box-sizing: border-box;
+            display: flex; justify-content: center; align-items: center;
+            padding: 0 20px 90px 20px; /* Padding at bottom for footer */
+            box-sizing: border-box;
             transition: opacity var(--page-transition-speed) ease-in-out, transform var(--page-transition-speed) ease-in-out;
             opacity: 0; transform: scale(1.1); pointer-events: none;
             overflow-y: auto;
         }
-        .view-content { width: 100%; display: flex; justify-content: center; align-items: center; }
         .view.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+        #settings-view { align-items: flex-start; padding-top: 50px; }
 
         .card-container {
             position: relative; width: var(--card-width); max-width: var(--card-max-width);
@@ -119,6 +97,28 @@
 
         @keyframes feedback-beat { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; } }
         @keyframes feedback-fade { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+
+        /* Footer Nav Bar */
+        .footer-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            display: flex; justify-content: space-around;
+            padding: 10px 0;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* For iPhone notch */
+            background-color: var(--footer-bg);
+            border-top: 1px solid var(--footer-border);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 100;
+        }
+        .footer-button {
+            background: none; border: none; cursor: pointer;
+            color: var(--inactive-icon-color);
+            transition: color 0.2s ease-in-out;
+        }
+        .footer-button.active {
+            color: var(--text-color);
+        }
+        .footer-button .material-symbols-outlined { font-size: 32px; }
 
         /* Settings Page Styles */
         .settings-container { width: 100%; max-width: 400px; padding-bottom: 50px; }
@@ -157,42 +157,17 @@
 </head>
 <body>
 
-    <header class="header">
-        <div id="home-header" class="header-content">
-            <h1 class="page-title">Home</h1>
-            <div class="header-icons">
-                <button id="go-to-settings-button" class="header-icon-button">
-                    <span class="material-symbols-outlined">settings</span>
-                </button>
-                <button id="go-to-liked-button" class="header-icon-button">
-                    <span class="material-symbols-outlined">favorite</span>
-                </button>
-            </div>
-        </div>
-        <div id="liked-header" class="header-content">
-            <h1 class="page-title">Liked</h1>
-            <button id="go-to-home-button" class="header-icon-button">
-                 <span class="material-symbols-outlined">home</span>
-            </button>
-        </div>
-        <div id="settings-header" class="header-content">
-            <h1 class="page-title">Settings</h1>
-             <button id="done-settings-button" class="header-icon-button">
-                 <span class="material-symbols-outlined">done</span>
-            </button>
-        </div>
-    </header>
-
     <div id="main-view" class="view active">
-        <div class="view-content"><div id="main-card-container" class="card-container"></div></div>
+        <div id="main-card-container" class="card-container"></div>
     </div>
 
     <div id="liked-view" class="view">
-        <div class="view-content"><div id="liked-card-container" class="card-container"></div></div>
+        <div id="liked-card-container" class="card-container"></div>
     </div>
 
     <div id="settings-view" class="view">
         <div class="settings-container">
+            <h1 style="font-size: 1.8rem; font-weight: 600; margin-top:0; margin-bottom: 30px;">Settings</h1>
             <div class="setting-item">
                 <label for="theme-toggle">Light Mode</label>
                 <label class="toggle-switch">
@@ -206,7 +181,7 @@
             </div>
             <div class="setting-item">
                 <label>Version</label>
-                <span class="version-text">v0.1.2 Beta</span>
+                <span class="version-text">v0.2 Beta</span>
             </div>
             <div class="setting-item">
                 <label for="clear-data-button">Erase all liked quotes</label>
@@ -214,6 +189,18 @@
             </div>
         </div>
     </div>
+
+    <footer class="footer-nav">
+        <button id="home-nav-btn" class="footer-button active">
+            <span class="material-symbols-outlined">home</span>
+        </button>
+        <button id="liked-nav-btn" class="footer-button">
+            <span class="material-symbols-outlined">favorite</span>
+        </button>
+        <button id="settings-nav-btn" class="footer-button">
+            <span class="material-symbols-outlined">settings</span>
+        </button>
+    </footer>
 
 
     <script>
@@ -228,13 +215,13 @@
             const mainView = document.getElementById('main-view');
             const likedView = document.getElementById('liked-view');
             const settingsView = document.getElementById('settings-view');
-            const homeHeader = document.getElementById('home-header');
-            const likedHeader = document.getElementById('liked-header');
-            const settingsHeader = document.getElementById('settings-header');
+            const homeNavBtn = document.getElementById('home-nav-btn');
+            const likedNavBtn = document.getElementById('liked-nav-btn');
+            const settingsNavBtn = document.getElementById('settings-nav-btn');
             const animationSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--animation-speed')) * 1000;
 
-            const DB_KEY = 'mindfulDecksFavorites_v6';
-            const THEME_KEY = 'mindfulDecksTheme_v6';
+            const DB_KEY = 'mindfulDecksFavorites_v7';
+            const THEME_KEY = 'mindfulDecksTheme_v7';
             let favorites = JSON.parse(localStorage.getItem(DB_KEY)) || [];
             let mainDeck = [];
             let mainHistory = [];
@@ -267,7 +254,7 @@
                         return currentDeck[0];
                     } else { // Liked deck
                         if(currentDeck.length === 0) return null;
-                        this.currentIndex = (this.currentIndex + 1) % currentDeck.length;
+                        this.currentIndex = (this.currentIndex) % currentDeck.length;
                         return currentDeck[this.currentIndex];
                     }
                 }
@@ -338,7 +325,6 @@
                     } else {
                         currentDeck = [...favorites];
                         history = [];
-                        if (this.currentIndex >= currentDeck.length) this.currentIndex = 0;
                         quote = currentDeck.length > 0 ? currentDeck[this.currentIndex] : null;
                     }
                     
@@ -429,26 +415,28 @@
             const likedManager = createDeckManager('liked');
             
             // --- VIEW NAVIGATION ---
-            function switchView(activeView, activeHeader){
+            function switchView(activeView){
                 document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.querySelectorAll('.header-content').forEach(h => h.style.display = 'none');
+                document.querySelectorAll('.footer-button').forEach(b => b.classList.remove('active'));
+                
                 activeView.classList.add('active');
-                activeHeader.style.display = 'flex';
+
+                if (activeView.id === 'main-view') homeNavBtn.classList.add('active');
+                else if (activeView.id === 'liked-view') likedNavBtn.classList.add('active');
+                else if (activeView.id === 'settings-view') settingsNavBtn.classList.add('active');
             }
-            document.getElementById('go-to-liked-button').addEventListener('click', () => {
+            homeNavBtn.addEventListener('click', () => switchView(mainView));
+            likedNavBtn.addEventListener('click', () => {
                 likedManager.reset(); likedManager.start();
-                switchView(likedView, likedHeader);
+                switchView(likedView);
             });
-            document.getElementById('go-to-settings-button').addEventListener('click', () => switchView(settingsView, settingsHeader));
-            document.getElementById('go-to-home-button').addEventListener('click', () => switchView(mainView, homeHeader));
-            document.getElementById('done-settings-button').addEventListener('click', () => switchView(mainView, homeHeader));
+            settingsNavBtn.addEventListener('click', () => switchView(settingsView));
 
             // --- SETTINGS LOGIC ---
             const themeToggle = document.getElementById('theme-toggle');
             const updateButton = document.getElementById('update-app-button');
             const clearDataButton = document.getElementById('clear-data-button');
 
-            // Theme
             function applyTheme(theme) {
                 if (theme === 'light') {
                     document.body.classList.add('light-mode');
@@ -464,10 +452,8 @@
                 applyTheme(newTheme);
             });
             
-            // Update
             updateButton.addEventListener('click', () => location.reload());
             
-            // Clear Data
             clearDataButton.addEventListener('click', () => {
                 if (confirm("Are you sure you want to erase all liked quotes? This action cannot be undone.")) {
                     localStorage.removeItem(DB_KEY);
