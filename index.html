@@ -56,7 +56,7 @@
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
-            padding: 0 20px 90px 20px; /* Padding at bottom for footer */
+            padding: 0 20px 100px 20px; /* Increased bottom padding */
             box-sizing: border-box;
             transition: opacity var(--page-transition-speed) ease-in-out, transform var(--page-transition-speed) ease-in-out;
             opacity: 0; transform: scale(1.1); pointer-events: none;
@@ -103,7 +103,8 @@
             position: fixed; bottom: 0; left: 0; right: 0;
             display: flex; justify-content: space-around;
             padding: 10px 0;
-            padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* For iPhone notch */
+            height: 60px; /* Increased height */
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
             background-color: var(--footer-bg);
             border-top: 1px solid var(--footer-border);
             backdrop-filter: blur(15px);
@@ -181,7 +182,7 @@
             </div>
             <div class="setting-item">
                 <label>Version</label>
-                <span class="version-text">v0.2 Beta</span>
+                <span class="version-text">v0.2.2 Beta</span>
             </div>
             <div class="setting-item">
                 <label for="clear-data-button">Erase all liked quotes</label>
@@ -191,11 +192,11 @@
     </div>
 
     <footer class="footer-nav">
-        <button id="home-nav-btn" class="footer-button active">
-            <span class="material-symbols-outlined">home</span>
-        </button>
         <button id="liked-nav-btn" class="footer-button">
             <span class="material-symbols-outlined">favorite</span>
+        </button>
+        <button id="home-nav-btn" class="footer-button active">
+            <span class="material-symbols-outlined">home</span>
         </button>
         <button id="settings-nav-btn" class="footer-button">
             <span class="material-symbols-outlined">settings</span>
@@ -215,9 +216,6 @@
             const mainView = document.getElementById('main-view');
             const likedView = document.getElementById('liked-view');
             const settingsView = document.getElementById('settings-view');
-            const homeNavBtn = document.getElementById('home-nav-btn');
-            const likedNavBtn = document.getElementById('liked-nav-btn');
-            const settingsNavBtn = document.getElementById('settings-nav-btn');
             const animationSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--animation-speed')) * 1000;
 
             const DB_KEY = 'mindfulDecksFavorites_v7';
@@ -325,6 +323,7 @@
                     } else {
                         currentDeck = [...favorites];
                         history = [];
+                        if (this.currentIndex >= currentDeck.length) this.currentIndex = 0;
                         quote = currentDeck.length > 0 ? currentDeck[this.currentIndex] : null;
                     }
                     
@@ -417,20 +416,22 @@
             // --- VIEW NAVIGATION ---
             function switchView(activeView){
                 document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.querySelectorAll('.footer-button').forEach(b => b.classList.remove('active'));
+                const navButtons = document.querySelectorAll('.footer-button');
+                navButtons.forEach(b => b.classList.remove('active'));
                 
                 activeView.classList.add('active');
 
-                if (activeView.id === 'main-view') homeNavBtn.classList.add('active');
-                else if (activeView.id === 'liked-view') likedNavBtn.classList.add('active');
-                else if (activeView.id === 'settings-view') settingsNavBtn.classList.add('active');
+                if (activeView.id === 'main-view') document.getElementById('home-nav-btn').classList.add('active');
+                else if (activeView.id === 'liked-view') document.getElementById('liked-nav-btn').classList.add('active');
+                else if (activeView.id === 'settings-view') document.getElementById('settings-nav-btn').classList.add('active');
             }
-            homeNavBtn.addEventListener('click', () => switchView(mainView));
-            likedNavBtn.addEventListener('click', () => {
+            document.getElementById('home-nav-btn').addEventListener('click', () => switchView(mainView));
+            document.getElementById('liked-nav-btn').addEventListener('click', () => {
                 likedManager.reset(); likedManager.start();
                 switchView(likedView);
             });
-            settingsNavBtn.addEventListener('click', () => switchView(settingsView));
+            document.getElementById('settings-nav-btn').addEventListener('click', () => switchView(settingsView));
+
 
             // --- SETTINGS LOGIC ---
             const themeToggle = document.getElementById('theme-toggle');
