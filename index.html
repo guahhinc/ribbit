@@ -7,11 +7,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Ribbit</title>
 
-    <!-- Google Fonts: Inter Tight & Filled Material Symbols -->
+    <!-- Google Fonts: Inter Tight & Filled, Rounded Material Symbols -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,1,0" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,400,1,0" />
 
     <style>
         :root {
@@ -49,14 +49,15 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         
-        .material-symbols-outlined {
+        .material-symbols-rounded {
+          font-family: 'Material Symbols Rounded';
           font-variation-settings: 'FILL' 1;
         }
 
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
-            padding: 0 20px 100px 20px; /* Increased bottom padding */
+            padding: 0 20px 100px 20px;
             box-sizing: border-box;
             transition: opacity var(--page-transition-speed) ease-in-out, transform var(--page-transition-speed) ease-in-out;
             opacity: 0; transform: scale(1.1); pointer-events: none;
@@ -88,7 +89,7 @@
         @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
         .feedback-animation {
-            font-family: 'Material Symbols Outlined'; font-size: 6rem; position: absolute;
+            font-family: 'Material Symbols Rounded'; font-size: 6rem; position: absolute;
             transform: translate(-50%, -50%) scale(0.5); pointer-events: none;
             animation: feedback-beat 0.6s ease-in-out;
         }
@@ -102,8 +103,9 @@
         .footer-nav {
             position: fixed; bottom: 0; left: 0; right: 0;
             display: flex; justify-content: space-around;
-            padding: 10px 0;
-            height: 60px; /* Increased height */
+            align-items: flex-start; /* Aligns icons to the top of the footer */
+            height: 60px;
+            padding: 10px 0; /* Pushes icons down from the top edge */
             padding-bottom: calc(10px + env(safe-area-inset-bottom));
             background-color: var(--footer-bg);
             border-top: 1px solid var(--footer-border);
@@ -119,7 +121,7 @@
         .footer-button.active {
             color: var(--text-color);
         }
-        .footer-button .material-symbols-outlined { font-size: 32px; }
+        .footer-button .material-symbols-rounded { font-size: 32px; }
 
         /* Settings Page Styles */
         .settings-container { width: 100%; max-width: 400px; padding-bottom: 50px; }
@@ -182,7 +184,7 @@
             </div>
             <div class="setting-item">
                 <label>Version</label>
-                <span class="version-text">v0.2.2 Beta</span>
+                <span class="version-text">v0.2.3 Beta</span>
             </div>
             <div class="setting-item">
                 <label for="clear-data-button">Erase all liked quotes</label>
@@ -193,13 +195,13 @@
 
     <footer class="footer-nav">
         <button id="liked-nav-btn" class="footer-button">
-            <span class="material-symbols-outlined">favorite</span>
+            <span class="material-symbols-rounded">favorite</span>
         </button>
         <button id="home-nav-btn" class="footer-button active">
-            <span class="material-symbols-outlined">home</span>
+            <span class="material-symbols-rounded">home</span>
         </button>
         <button id="settings-nav-btn" class="footer-button">
-            <span class="material-symbols-outlined">settings</span>
+            <span class="material-symbols-rounded">settings</span>
         </button>
     </footer>
 
