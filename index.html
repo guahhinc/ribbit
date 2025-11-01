@@ -13,6 +13,7 @@
             --card-max-width: 380px;
             --card-height: 70vh;
             --card-max-height: 600px;
+            --animation-speed: 0.3s; /* Quicker Animation Speed */
         }
 
         body, html {
@@ -57,7 +58,7 @@
             font-size: 1.7rem; font-weight: 300; line-height: 1.5;
             text-shadow: 0 2px 4px rgba(0,0,0,0.4);
             cursor: grab; user-select: none; will-change: transform;
-            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease;
+            transition: transform var(--animation-speed) cubic-bezier(0.25, 0.8, 0.25, 1), opacity var(--animation-speed) ease;
             overflow: hidden;
         }
 
@@ -118,12 +119,13 @@
             const likedView = document.getElementById('liked-view');
             const mainCardContainer = document.getElementById('main-card-container');
             const likedCardContainer = document.getElementById('liked-card-container');
+            const animationSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--animation-speed')) * 1000;
 
-            let favorites = JSON.parse(localStorage.getItem('mindfulDecksFavorites')) || [];
+            let favorites = JSON.parse(localStorage.getItem('mindfulDecksFavorites_v2')) || [];
             let mainDeck = [];
             let mainHistory = [];
-
-            const saveFavorites = () => localStorage.setItem('mindfulDecksFavorites', JSON.stringify(favorites));
+            
+            const saveFavorites = () => localStorage.setItem('mindfulDecksFavorites_v2', JSON.stringify(favorites));
 
             function createCardElement(quote) {
                 const card = document.createElement('div');
@@ -133,43 +135,127 @@
                 card.innerHTML = `<span>${quote.text}</span>`;
                 return card;
             }
+            
+            function createDeckManager(deckType) {
+                const container = deckType === 'main' ? mainCardContainer : likedCardContainer;
+                let currentDeck = [];
+                let history = [];
+                let currentIndex = 0;
 
-            function initDeck(deckManager) {
-                const { container, getNextCard, getPreviousCard, onDoubleTap } = deckManager;
-                container.innerHTML = '';
+                function getNextCard() {
+                    if (deckType === 'main') {
+                        const currentQuote = currentDeck[0];
+                        if (currentQuote) history.push(currentQuote);
+                        currentDeck.shift();
+                        if (currentDeck.length === 0) {
+                            currentDeck.push(...masterQuotes.sort(() => Math.random() - 0.5).filter(q => !history.some(h => h.id === q.id)));
+                        }
+                        return currentDeck[0];
+                    } else { // Liked deck
+                        if(currentDeck.length === 0) return null;
+                        currentIndex = (currentIndex + 1) % currentDeck.length;
+                        return currentDeck[currentIndex];
+                    }
+                }
 
-                function showCard(getCardFn, animationClass) {
-                    const quote = getCardFn();
+                function getPreviousCard() {
+                     if (deckType === 'main') {
+                        if (history.length === 0) return null;
+                        currentDeck.unshift(history.pop());
+                        return currentDeck[0];
+                    } else { // Liked deck
+                         if(currentDeck.length === 0) return null;
+                        currentIndex = (currentIndex - 1 + currentDeck.length) % currentDeck.length;
+                        return currentDeck[currentIndex];
+                    }
+                }
+
+                function onDoubleTap(card, e) {
+                    const quoteId = parseInt(card.dataset.id);
+                    if (quoteId < 0) return;
+
+                    const rect = card.getBoundingClientRect();
+                    const x = (e.clientX ?? e.touches[0].clientX) - rect.left;
+                    const y = (e.clientY ?? e.touches[0].clientY) - rect.top;
+                    const feedback = document.createElement('div');
+                    feedback.className = 'feedback-animation';
+                    feedback.style.left = `${x}px`;
+                    feedback.style.top = `${y}px`;
+                    card.appendChild(feedback);
+
+                    const isFavorited = favorites.some(fav => fav.id === quoteId);
+
+                    if (deckType === 'main' && !isFavorited) {
+                        const quote = masterQuotes.find(q => q.id === quoteId);
+                        if (quote) favorites.push(quote);
+                        saveFavorites();
+                        feedback.innerHTML = '❤️';
+                        feedback.classList.add('heart');
+                    } else if (deckType === 'liked' && isFavorited) {
+                        favorites = favorites.filter(fav => fav.id !== quoteId);
+                        saveFavorites();
+                        feedback.innerHTML = '💔';
+                        feedback.classList.add('unheart');
+                         setTimeout(() => {
+                           card.style.transform = `translateY(100vh) rotate(30deg)`;
+                           card.style.opacity = 0;
+                           setTimeout(() => {
+                                card.remove();
+                                this.reset();
+                                this.start();
+                           }, animationSpeed);
+                        }, 300);
+                    }
+                    feedback.addEventListener('animationend', () => feedback.remove());
+                }
+
+                function start() {
+                    container.innerHTML = '';
+                    let quote;
+                    if (deckType === 'main') {
+                        if(mainDeck.length === 0) mainDeck.push(...masterQuotes.sort(() => Math.random() - 0.5));
+                        currentDeck = mainDeck;
+                        history = mainHistory;
+                        quote = currentDeck[0];
+                    } else {
+                        currentDeck = [...favorites];
+                        history = [];
+                        currentIndex = -1; // So getNextCard starts at 0
+                        quote = currentDeck.length > 0 ? getNextCard() : null;
+                    }
+                    
                     if (!quote) {
-                        if (deckManager.createEmptyCard) deckManager.createEmptyCard();
+                        if (deckType === 'liked') {
+                             const emptyCard = createCardElement({id: -1, text: "Double-tap cards on the main screen to add them here.", colors: ["#434343", "#000000"]});
+                             container.appendChild(emptyCard);
+                        }
                         return;
                     }
+                    
                     const card = createCardElement(quote);
-                    card.classList.add(animationClass);
+                    card.classList.add('entering-bottom');
                     container.appendChild(card);
-                    setTimeout(() => card.classList.remove(animationClass), 20);
-                    initCardListeners(card, getCardFn, animationClass);
+                    setTimeout(() => card.classList.remove('entering-bottom'), 20);
+                    initCardListeners(card);
                 }
 
                 function initCardListeners(card) {
-                    let startX = 0, startY = 0, isDragging = false, isTap = true, lastTap = 0;
+                    let startX = 0, startY = 0, isDragging = false, lastTap = 0, hasMoved = false;
 
                     function onPointerDown(e) {
-                        e.preventDefault();
                         const currentTime = new Date().getTime();
-                        if (currentTime - lastTap < 300) { // Double tap
-                            lastTap = 0; // Reset
+                        if (currentTime - lastTap < 250) { // Double tap
+                            lastTap = 0;
                             onDoubleTap(card, e);
                             return;
                         }
                         lastTap = currentTime;
 
+                        hasMoved = false;
                         isDragging = true;
-                        isTap = true;
                         startX = e.pageX ?? e.touches[0].pageX;
                         startY = e.pageY ?? e.touches[0].pageY;
-                        card.classList.add('dragging');
-
+                        
                         document.addEventListener('mousemove', onPointerMove, { passive: false });
                         document.addEventListener('touchmove', onPointerMove, { passive: false });
                         document.addEventListener('mouseup', onPointerEnd);
@@ -178,147 +264,73 @@
 
                     function onPointerMove(e) {
                         if (!isDragging) return;
-                        e.preventDefault();
                         const currentX = e.pageX ?? e.touches[0].pageX;
-                        const currentY = e.pageY ?? e.touches[0].pageY;
                         const deltaX = currentX - startX;
-                        const deltaY = currentY - startY;
-
-                        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-                            isTap = false;
+                        
+                        if(!hasMoved && Math.abs(deltaX) > 5){
+                             hasMoved = true;
+                             card.classList.add('dragging');
                         }
-                        card.style.transform = `translateX(${deltaX}px) rotate(${deltaX / 20}deg)`;
+
+                        if(hasMoved) {
+                            e.preventDefault();
+                            card.style.transform = `translateX(${deltaX}px) rotate(${deltaX / 20}deg)`;
+                        }
                     }
 
                     function onPointerEnd(e) {
-                        if (!isDragging) return;
-                        isDragging = false;
-                        card.classList.remove('dragging');
                         document.removeEventListener('mousemove', onPointerMove); document.removeEventListener('touchmove', onPointerMove);
                         document.removeEventListener('mouseup', onPointerEnd); document.removeEventListener('touchend', onPointerEnd);
+                        
+                        if (!hasMoved) { // This was a single tap, not a drag
+                            isDragging = false;
+                            return;
+                        }
+                        
+                        card.classList.remove('dragging');
+                        const deltaX = (e.pageX ?? e.changedTouches?.[0].pageX ?? startX) - startX;
 
-                        const deltaX = (e.pageX ?? e.changedTouches?.[0].pageX) - startX;
-
-                        if (!isTap && Math.abs(deltaX) > window.innerWidth / 4) {
+                        if (Math.abs(deltaX) > window.innerWidth / 4) {
                             const direction = deltaX > 0 ? 1 : -1;
-                            
-                            if (direction === 1 && !deckManager.canGoBack()) {
+                            if (direction === 1 && history.length === 0 && deckType === 'main') {
                                 card.style.transform = '';
                                 return;
                             }
                             
-                            card.style.transition = 'transform 0.4s ease-out';
+                            card.style.transition = `transform ${animationSpeed / 1000}s ease-out`;
                             card.style.transform = `translateX(${direction * window.innerWidth}px) rotate(${direction * 30}deg)`;
                             
                             setTimeout(() => {
                                 card.remove();
                                 const getCardFn = direction === -1 ? getNextCard : getPreviousCard;
-                                showCard(getCardFn, direction === -1 ? 'entering-bottom' : 'entering-left');
-                            }, 400);
+                                const quote = getCardFn();
+                                if (quote) {
+                                    const newCard = createCardElement(quote);
+                                    newCard.classList.add(direction === -1 ? 'entering-bottom' : 'entering-left');
+                                    container.appendChild(newCard);
+                                    setTimeout(() => newCard.classList.remove(direction === -1 ? 'entering-bottom' : 'entering-left'), 20);
+                                    initCardListeners(newCard);
+                                } else if (deckType === 'liked'){
+                                    this.start();
+                                }
+                            }, animationSpeed);
                         } else {
                             card.style.transform = '';
                         }
                     }
                     card.addEventListener('mousedown', onPointerDown);
-                    card.addEventListener('touchstart', onPointerDown, { passive: true });
+                    card.addEventListener('touchstart', onPointerDown);
                 }
-                showCard(getNextCard, 'entering-bottom');
+
+                return { start, reset: function() { currentDeck = []; history = []; currentIndex = 0; } };
             }
 
-            const mainDeckManager = {
-                container: mainCardContainer,
-                canGoBack: () => mainHistory.length > 0,
-                getNextCard: () => {
-                    const currentCardEl = mainCardContainer.querySelector('.card');
-                    if (currentCardEl) {
-                        const currentQuote = masterQuotes.find(q => q.id == currentCardEl.dataset.id);
-                        if(currentQuote) mainHistory.push(currentQuote);
-                    }
-                    if (mainDeck.length === 0) {
-                        mainDeck.push(...masterQuotes.sort(() => Math.random() - 0.5));
-                    }
-                    return mainDeck.shift();
-                },
-                getPreviousCard: () => {
-                    const currentCardEl = mainCardContainer.querySelector('.card');
-                    if(currentCardEl){
-                        const currentQuote = masterQuotes.find(q => q.id == currentCardEl.dataset.id);
-                        if(currentQuote) mainDeck.unshift(currentQuote);
-                    }
-                    return mainHistory.pop();
-                },
-                onDoubleTap: (card, e) => {
-                    const quoteId = parseInt(card.dataset.id);
-                    if (favorites.some(fav => fav.id === quoteId)) return;
-                    
-                    const quote = masterQuotes.find(q => q.id === quoteId);
-                    if(quote) favorites.push(quote);
-                    saveFavorites();
-                    
-                    const rect = card.getBoundingClientRect();
-                    const x = (e.clientX ?? e.touches[0].clientX) - rect.left;
-                    const y = (e.clientY ?? e.touches[0].clientY) - rect.top;
-                    const heart = document.createElement('div');
-                    heart.className = 'feedback-animation heart';
-                    heart.innerHTML = '❤️';
-                    heart.style.left = `${x}px`;
-                    heart.style.top = `${y}px`;
-                    card.appendChild(heart);
-                    heart.addEventListener('animationend', () => heart.remove());
-                }
-            };
-
-            let likedDeckManager = {
-                container: likedCardContainer,
-                currentIndex: 0,
-                canGoBack() { return favorites.length > 1; },
-                getNextCard() {
-                    if (favorites.length === 0) return null;
-                    this.currentIndex = (this.currentIndex + 1) % favorites.length;
-                    return favorites[this.currentIndex];
-                },
-                getPreviousCard() {
-                    if (favorites.length === 0) return null;
-                    this.currentIndex = (this.currentIndex - 1 + favorites.length) % favorites.length;
-                    return favorites[this.currentIndex];
-                },
-                onDoubleTap(card, e) {
-                    const quoteId = parseInt(card.dataset.id);
-                    const unlikedIndex = favorites.findIndex(fav => fav.id === quoteId);
-                    if(unlikedIndex === -1) return;
-                    
-                    favorites = favorites.filter(fav => fav.id !== quoteId);
-                    saveFavorites();
-                    
-                    const rect = card.getBoundingClientRect();
-                    const x = (e.clientX ?? e.touches[0].clientX) - rect.left;
-                    const y = (e.clientY ?? e.touches[0].clientY) - rect.top;
-                    const unheart = document.createElement('div');
-                    unheart.className = 'feedback-animation unheart';
-                    unheart.innerHTML = '💔';
-                    unheart.style.left = `${x}px`;
-                    unheart.style.top = `${y}px`;
-                    card.appendChild(unheart);
-                    
-                    setTimeout(() => {
-                        card.style.transform = `translateY(100vh) rotate(30deg)`;
-                        card.style.opacity = 0;
-                        setTimeout(() => {
-                            card.remove();
-                            this.currentIndex = unlikedIndex % (favorites.length || 1);
-                            initDeck(this);
-                        }, 400);
-                    }, 300);
-                },
-                createEmptyCard() {
-                    const card = createCardElement({id: -1, text: "Double-tap cards on the main screen to add them here.", colors: ["#434343", "#000000"]});
-                    likedCardContainer.appendChild(card);
-                }
-            };
+            const mainManager = createDeckManager('main');
+            const likedManager = createDeckManager('liked');
 
             document.getElementById('view-liked-button').addEventListener('click', () => {
-                likedDeckManager.currentIndex = -1; // So that getNextCard starts at 0
-                initDeck(likedDeckManager);
+                likedManager.reset();
+                likedManager.start();
                 mainView.classList.remove('active');
                 likedView.classList.add('active');
             });
@@ -328,7 +340,7 @@
                 likedView.classList.remove('active');
             });
             
-            initDeck(mainDeckManager);
+            mainManager.start();
         });
     </script>
 </body>
