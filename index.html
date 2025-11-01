@@ -15,6 +15,12 @@
 
     <style>
         :root {
+            --background-color: #000000;
+            --text-color: #ffffff;
+            --header-icon-bg: rgba(30, 30, 30, 0.7);
+            --header-icon-border: rgba(255, 255, 255, 0.1);
+            --setting-item-bg: #1e1e1e;
+            
             --card-width: 90vw;
             --card-max-width: 380px;
             --card-height: 65vh;
@@ -23,13 +29,22 @@
             --page-transition-speed: 0.4s;
         }
 
+        body.light-mode {
+            --background-color: #f0f2f5;
+            --text-color: #1c1e21;
+            --header-icon-bg: rgba(255, 255, 255, 0.7);
+            --header-icon-border: rgba(0, 0, 0, 0.1);
+            --setting-item-bg: #ffffff;
+        }
+
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             font-family: 'Inter Tight', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #000000;
-            color: white;
+            background-color: var(--background-color);
+            color: var(--text-color);
             overflow: hidden;
             position: relative;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         .material-symbols-outlined {
@@ -39,7 +54,12 @@
         .header {
             position: fixed; top: 0; left: 0; width: 100%;
             padding: 15px 20px; box-sizing: border-box; z-index: 100;
-            background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
+        }
+        body.light-mode .header {
+             background: linear-gradient(180deg, rgba(240,242,245,0.5) 0%, rgba(240,242,245,0) 100%);
+        }
+        body:not(.light-mode) .header {
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
         }
         .header-content {
             display: flex; justify-content: space-between; align-items: center; width: 100%;
@@ -47,19 +67,19 @@
         .page-title { margin: 0; font-size: 1.8rem; font-weight: 600; }
         .header-icons { display: flex; gap: 10px; }
         .header-icon-button {
-            background-color: rgba(30, 30, 30, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white; cursor: pointer; width: 44px; height: 44px;
+            background-color: var(--header-icon-bg);
+            border: 1px solid var(--header-icon-border);
+            color: var(--text-color); cursor: pointer; width: 44px; height: 44px;
             border-radius: 50%; display: flex; justify-content: center;
             align-items: center; backdrop-filter: blur(10px);
         }
         .header-icon-button .material-symbols-outlined { font-size: 28px; }
-        #liked-header, #add-quote-header { display: none; }
+        #liked-header, #settings-header { display: none; }
 
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; justify-content: flex-start; align-items: flex-start;
-            padding-top: 100px; box-sizing: border-box;
+            padding: 100px 20px 0 20px; box-sizing: border-box;
             transition: opacity var(--page-transition-speed) ease-in-out, transform var(--page-transition-speed) ease-in-out;
             opacity: 0; transform: scale(1.1); pointer-events: none;
             overflow-y: auto;
@@ -75,7 +95,7 @@
         .card {
             position: absolute; width: 100%; height: 100%; background-size: 200% 200%;
             animation: gradientShift 15s ease infinite; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); color: white; display: flex; justify-content: center;
             align-items: center; padding: 30px; box-sizing: border-box; text-align: center;
             font-size: 1.7rem; font-weight: 300; line-height: 1.5; text-shadow: 0 2px 4px rgba(0,0,0,0.4);
             cursor: grab; user-select: none; will-change: transform;
@@ -100,30 +120,39 @@
         @keyframes feedback-beat { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; } }
         @keyframes feedback-fade { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
 
-        /* Add Quote Page Styles */
-        .form-container { width: 90%; max-width: 400px; padding-bottom: 50px; }
-        .form-container h2 { font-weight: 600; margin-top: 30px; margin-bottom: 15px; }
-        #quote-textarea {
-            width: 100%; height: 100px; background-color: #1e1e1e; border: 1px solid #444;
-            border-radius: 10px; color: white; font-family: 'Inter Tight', sans-serif;
-            font-size: 1rem; padding: 10px; box-sizing: border-box; resize: vertical;
+        /* Settings Page Styles */
+        .settings-container { width: 100%; max-width: 400px; padding-bottom: 50px; }
+        .setting-item {
+            background-color: var(--setting-item-bg);
+            border-radius: 10px; padding: 15px;
+            margin-bottom: 15px; display: flex;
+            justify-content: space-between; align-items: center;
+            transition: background-color 0.3s ease;
         }
-        .gradient-palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; }
-        .gradient-swatch {
-            width: 100%; height: 50px; border-radius: 25px; cursor: pointer;
-            border: 2px solid transparent; transition: border-color 0.2s;
+        .setting-item label { font-size: 1rem; font-weight: 300; }
+        .setting-item button {
+            background: none; border: none; font-size: 1rem; font-weight: 600;
+            color: #3498db; cursor: pointer; font-family: 'Inter Tight', sans-serif;
         }
-        .gradient-swatch.selected { border-color: white; }
-        #save-quote-button {
-            width: 100%; padding: 15px; margin-top: 30px; background-color: #27ae60;
-            color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
+        #clear-data-button { color: #e74c3c; }
+        .version-text { font-size: 0.9rem; color: #888; }
+
+        .toggle-switch {
+            position: relative; display: inline-block; width: 50px; height: 28px;
         }
-        .custom-quote-list-item {
-            background-color: #1e1e1e; border-radius: 10px; padding: 15px;
-            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333; transition: .4s; border-radius: 28px;
         }
-        .custom-quote-text { flex-grow: 1; padding-right: 15px; }
-        .delete-quote-button { background: none; border: none; color: #c0392b; cursor: pointer; }
+        .slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px;
+            left: 4px; bottom: 4px; background-color: white;
+            transition: .4s; border-radius: 50%;
+        }
+        body.light-mode .slider { background-color: #ccc; }
+        input:checked + .slider { background-color: #27ae60; }
+        input:checked + .slider:before { transform: translateX(22px); }
     </style>
 </head>
 <body>
@@ -132,8 +161,8 @@
         <div id="home-header" class="header-content">
             <h1 class="page-title">Home</h1>
             <div class="header-icons">
-                <button id="go-to-add-quote-button" class="header-icon-button">
-                    <span class="material-symbols-outlined">add_circle</span>
+                <button id="go-to-settings-button" class="header-icon-button">
+                    <span class="material-symbols-outlined">settings</span>
                 </button>
                 <button id="go-to-liked-button" class="header-icon-button">
                     <span class="material-symbols-outlined">favorite</span>
@@ -146,9 +175,9 @@
                  <span class="material-symbols-outlined">home</span>
             </button>
         </div>
-        <div id="add-quote-header" class="header-content">
-            <h1 class="page-title">Add</h1>
-             <button id="done-add-quote-button" class="header-icon-button">
+        <div id="settings-header" class="header-content">
+            <h1 class="page-title">Settings</h1>
+             <button id="done-settings-button" class="header-icon-button">
                  <span class="material-symbols-outlined">done</span>
             </button>
         </div>
@@ -162,20 +191,30 @@
         <div class="view-content"><div id="liked-card-container" class="card-container"></div></div>
     </div>
 
-    <div id="add-quote-view" class="view">
-        <div class="form-container">
-            <h2>Add a Quote</h2>
-            <textarea id="quote-textarea" placeholder="Type your quote here..."></textarea>
-            
-            <h2>Choose a Gradient</h2>
-            <div id="gradient-palette" class="gradient-palette"></div>
-            
-            <button id="save-quote-button">Save Quote</button>
-            
-            <h2>Your Quotes</h2>
-            <div id="custom-quotes-list"></div>
+    <div id="settings-view" class="view">
+        <div class="settings-container">
+            <div class="setting-item">
+                <label for="update-app-button">Check for updates</label>
+                <button id="update-app-button">Update App</button>
+            </div>
+            <div class="setting-item">
+                <label>Version</label>
+                <span class="version-text">v1.0.0</span>
+            </div>
+            <div class="setting-item">
+                <label for="clear-data-button">Erase all liked quotes</label>
+                <button id="clear-data-button">Erase</button>
+            </div>
+            <div class="setting-item">
+                <label for="theme-toggle">Light Mode</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
     </div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -186,28 +225,21 @@
                 { id: 101, text: "The only true wisdom is in knowing you know nothing.", colors: ["#606c88", "#3f4c6b"] }, { id: 102, text: "An investment in knowledge pays the best interest.", colors: ["#1f4037", "#99f2c8"] }, { id: 103, text: "The measure of intelligence is the ability to change.", colors: ["#83a4d4", "#b6fbff"] }, { id: 104, text: "You can't cross the sea merely by standing and staring at the water.", colors: ["#0052D4", "#65C7F7"] }, { id: 105, text: "A goal is a dream with a deadline.", colors: ["#ff512f", "#dd2476"] }, { id: 106, text: "Either you run the day or the day runs you.", colors: ["#7b4397", "#dc2430"] }, { id: 107, text: "Build your own dreams, or someone else will hire you to build theirs.", colors: ["#36D1DC", "#5B86E5"] }, { id: 108, text: "There is only one corner of the universe you can be certain of improving, and that's your own self.", colors: ["#9796f0", "#fbc7d4"] }, { id: 109, text: "What seems to us as bitter trials are often blessings in disguise.", colors: ["#20002c", "#cbb4d4"] }, { id: 110, text: "Change your thoughts and you change your world.", colors: ["#5433FF", "#A5FECB"] }, { id: 111, text: "If there is no struggle, there is no progress.", colors: ["#23074d", "#cc5333"] }, { id: 112, text: "The undertaking of a new action brings new strength.", colors: ["#3C1053", "#AD5389"] }, { id: 113, text: "Believe that life is worth living and your belief will help create the fact.", colors: ["#1565C0", "#b92b27"] }, { id: 114, text: "Go forth and set the world on fire.", colors: ["#f12711", "#f5af19"] }, { id: 115, text: "The power of imagination makes us infinite.", colors: ["#474342", "#895a43"] }, { id: 116, text: "Embrace the glorious mess that you are.", colors: ["#654ea3", "#eaafc8"] }, { id: 117, text: "Normality is a paved road: It’s comfortable to walk, but no flowers grow on it.", colors: ["#34e89e", "#0f3443"] }, { id: 118, text: "We are all in the gutter, but some of us are looking at the stars.", colors: ["#0F2027", "#2C5364"] }, { id: 119, text: "I have not failed. I've just found 10,000 ways that won't work.", colors: ["#8e9eab", "#eef2f3"] }, { id: 120, text: "It is a fine thing to have an open mind, but not so open that your brains fall out.", colors: ["#403A3E", "#BE5869"] }
             ];
 
-            const gradientOptions = [
-                ['#2c3e50', '#4ca1af'], ['#8E2DE2', '#4A00E0'], ['#159957', '#155799'], ['#cb2d3e', '#ef473a'],
-                ['#00b09b', '#96c93d'], ['#ff4e50', '#f9d423'], ['#360033', '#0b8793'], ['#c31432', '#240b36'],
-                ['#1c92d2', '#f2fcfe'], ['#f12711', '#f5af19'], ['#1A2980', '#26D0CE'], ['#00467F', '#A5CC82'],
-                ['#ED213A', '#93291E'], ['#e52d27', '#b31217'], ['#2C3E50', '#FD746C'], ['#348F50', '#56B4D3']
-            ];
-
             const mainView = document.getElementById('main-view');
             const likedView = document.getElementById('liked-view');
-            const addQuoteView = document.getElementById('add-quote-view');
+            const settingsView = document.getElementById('settings-view');
             const homeHeader = document.getElementById('home-header');
             const likedHeader = document.getElementById('liked-header');
-            const addQuoteHeader = document.getElementById('add-quote-header');
+            const settingsHeader = document.getElementById('settings-header');
             const animationSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--animation-speed')) * 1000;
 
-            let favorites = JSON.parse(localStorage.getItem('mindfulDecksFavorites_v5')) || [];
-            let customQuotes = JSON.parse(localStorage.getItem('mindfulDecksCustomQuotes_v5')) || [];
+            const DB_KEY = 'mindfulDecksFavorites_v6';
+            const THEME_KEY = 'mindfulDecksTheme_v6';
+            let favorites = JSON.parse(localStorage.getItem(DB_KEY)) || [];
             let mainDeck = [];
             let mainHistory = [];
             
-            const saveFavorites = () => localStorage.setItem('mindfulDecksFavorites_v5', JSON.stringify(favorites));
-            const saveCustomQuotes = () => localStorage.setItem('mindfulDecksCustomQuotes_v5', JSON.stringify(customQuotes));
+            const saveFavorites = () => localStorage.setItem(DB_KEY, JSON.stringify(favorites));
 
             function createCardElement(quote) {
                 const card = document.createElement('div');
@@ -230,13 +262,12 @@
                         if (currentQuote) history.push(currentQuote);
                         currentDeck.shift();
                         if (currentDeck.length === 0) {
-                            const allQuotes = [...masterQuotes, ...customQuotes];
-                            currentDeck.push(...allQuotes.sort(() => Math.random() - 0.5).filter(q => !history.some(h => h.id === q.id)));
+                            currentDeck.push(...masterQuotes.sort(() => Math.random() - 0.5).filter(q => !history.some(h => h.id === q.id)));
                         }
                         return currentDeck[0];
-                    } else {
+                    } else { // Liked deck
                         if(currentDeck.length === 0) return null;
-                        currentIndex = (currentIndex + 1) % currentDeck.length;
+                        currentIndex = (this.currentIndex + 1) % currentDeck.length;
                         return currentDeck[currentIndex];
                     }
                 }
@@ -246,9 +277,9 @@
                         if (history.length === 0) return null;
                         currentDeck.unshift(history.pop());
                         return currentDeck[0];
-                    } else {
+                    } else { // Liked deck
                          if(currentDeck.length === 0) return null;
-                        currentIndex = (currentIndex - 1 + currentDeck.length) % currentDeck.length;
+                        currentIndex = (this.currentIndex - 1 + currentDeck.length) % currentDeck.length;
                         return currentDeck[currentIndex];
                     }
                 }
@@ -259,8 +290,7 @@
                     const isFavorited = favorites.some(fav => fav.id === quoteId);
 
                     if (deckType === 'main' && !isFavorited) {
-                        const allQuotes = [...masterQuotes, ...customQuotes];
-                        const quote = allQuotes.find(q => q.id === quoteId);
+                        const quote = masterQuotes.find(q => q.id === quoteId);
                         if (quote) favorites.push(quote);
                         saveFavorites();
                         animateFeedback(card, e, 'favorite', 'heart');
@@ -297,18 +327,15 @@
                     container.innerHTML = '';
                     let quote;
                     if (deckType === 'main') {
-                        if(mainDeck.length === 0) {
-                            const allQuotes = [...masterQuotes, ...customQuotes];
-                            mainDeck.push(...allQuotes.sort(() => Math.random() - 0.5));
-                        }
+                        if(mainDeck.length === 0) mainDeck.push(...masterQuotes.sort(() => Math.random() - 0.5));
                         currentDeck = mainDeck;
                         history = mainHistory;
                         quote = currentDeck[0];
                     } else {
                         currentDeck = [...favorites];
                         history = [];
-                        currentIndex = -1;
-                        quote = currentDeck.length > 0 ? getNextCard() : null;
+                        this.currentIndex = -1;
+                        quote = currentDeck.length > 0 ? getNextCard.call(this) : null;
                     }
                     
                     if (!quote) {
@@ -361,9 +388,7 @@
                     function onPointerEnd(e) {
                         document.removeEventListener('mousemove', onPointerMove); document.removeEventListener('touchmove', onPointerMove);
                         document.removeEventListener('mouseup', onPointerEnd); document.removeEventListener('touchend', onPointerEnd);
-                        
                         if (!hasMoved) { isDragging = false; return; }
-                        
                         isDragging = false;
                         card.classList.remove('dragging');
                         const deltaX = (e.pageX ?? e.changedTouches?.[0].pageX ?? startX) - startX;
@@ -373,14 +398,12 @@
                             if (direction === 1 && history.length === 0 && deckType === 'main') {
                                 card.style.transform = ''; return;
                             }
-                            
                             card.style.transition = `transform ${animationSpeed / 1000}s ease-out`;
                             card.style.transform = `translateX(${direction * window.innerWidth}px) rotate(${direction * 30}deg)`;
-                            
                             setTimeout(() => {
                                 card.remove();
                                 const getCardFn = direction === -1 ? getNextCard : getPreviousCard;
-                                const quote = getCardFn();
+                                const quote = getCardFn.call(this);
                                 if (quote) {
                                     const newCard = createCardElement(quote);
                                     newCard.classList.add(direction === -1 ? 'entering-bottom' : 'entering-left');
@@ -395,7 +418,7 @@
                     card.addEventListener('touchstart', onPointerDown, { passive: true });
                 }
 
-                return { start, reset: function() { currentDeck = []; history = []; currentIndex = 0; } };
+                return { start, reset: function() { currentDeck = []; history = []; this.currentIndex = 0; } };
             }
 
             const mainManager = createDeckManager('main');
@@ -409,78 +432,49 @@
                 activeHeader.style.display = 'flex';
             }
             document.getElementById('go-to-liked-button').addEventListener('click', () => {
-                likedManager.reset();
-                likedManager.start();
+                likedManager.reset(); likedManager.start();
                 switchView(likedView, likedHeader);
             });
+            document.getElementById('go-to-settings-button').addEventListener('click', () => switchView(settingsView, settingsHeader));
             document.getElementById('go-to-home-button').addEventListener('click', () => switchView(mainView, homeHeader));
-            document.getElementById('go-to-add-quote-button').addEventListener('click', () => switchView(addQuoteView, addQuoteHeader));
-            document.getElementById('done-add-quote-button').addEventListener('click', () => switchView(mainView, homeHeader));
+            document.getElementById('done-settings-button').addEventListener('click', () => switchView(mainView, homeHeader));
 
-            // --- ADD QUOTE PAGE LOGIC ---
-            const palette = document.getElementById('gradient-palette');
-            const quoteTextarea = document.getElementById('quote-textarea');
-            const saveQuoteButton = document.getElementById('save-quote-button');
-            const customQuotesList = document.getElementById('custom-quotes-list');
-            let selectedGradient = null;
+            // --- SETTINGS LOGIC ---
+            const themeToggle = document.getElementById('theme-toggle');
+            const updateButton = document.getElementById('update-app-button');
+            const clearDataButton = document.getElementById('clear-data-button');
 
-            gradientOptions.forEach(colors => {
-                const swatch = document.createElement('div');
-                swatch.className = 'gradient-swatch';
-                swatch.style.background = `linear-gradient(160deg, ${colors[0]}, ${colors[1]})`;
-                swatch.addEventListener('click', () => {
-                    document.querySelectorAll('.gradient-swatch').forEach(s => s.classList.remove('selected'));
-                    swatch.classList.add('selected');
-                    selectedGradient = colors;
-                });
-                palette.appendChild(swatch);
-            });
-            
-            function renderCustomQuoteList(){
-                customQuotesList.innerHTML = '';
-                customQuotes.forEach(quote => {
-                    const item = document.createElement('div');
-                    item.className = 'custom-quote-list-item';
-                    item.innerHTML = `
-                        <span class="custom-quote-text">${quote.text}</span>
-                        <button class="delete-quote-button" data-id="${quote.id}">
-                             <span class="material-symbols-outlined">delete</span>
-                        </button>`;
-                    customQuotesList.appendChild(item);
-                });
-            }
-            
-            customQuotesList.addEventListener('click', (e) => {
-                const deleteButton = e.target.closest('.delete-quote-button');
-                if(!deleteButton) return;
-                const quoteId = parseInt(deleteButton.dataset.id);
-                customQuotes = customQuotes.filter(q => q.id !== quoteId);
-                favorites = favorites.filter(f => f.id !== quoteId);
-                mainDeck = mainDeck.filter(d => d.id !== quoteId);
-                mainHistory = mainHistory.filter(h => h.id !== quoteId);
-                saveCustomQuotes();
-                saveFavorites();
-                renderCustomQuoteList();
-            });
-            
-            saveQuoteButton.addEventListener('click', () => {
-                const text = quoteTextarea.value.trim();
-                if(!text || !selectedGradient) {
-                    alert('Please write a quote and select a gradient.');
-                    return;
+            // Theme
+            function applyTheme(theme) {
+                if (theme === 'light') {
+                    document.body.classList.add('light-mode');
+                    themeToggle.checked = true;
+                } else {
+                    document.body.classList.remove('light-mode');
+                    themeToggle.checked = false;
                 }
-                const newQuote = { id: Date.now(), text, colors: selectedGradient, custom: true };
-                customQuotes.push(newQuote);
-                mainDeck.push(newQuote); // Add to current session
-                saveCustomQuotes();
-                renderCustomQuoteList();
-                quoteTextarea.value = '';
-                document.querySelectorAll('.gradient-swatch').forEach(s => s.classList.remove('selected'));
-                selectedGradient = null;
-                alert('Quote saved!');
+            }
+            themeToggle.addEventListener('change', () => {
+                const newTheme = themeToggle.checked ? 'light' : 'dark';
+                localStorage.setItem(THEME_KEY, newTheme);
+                applyTheme(newTheme);
             });
             
-            renderCustomQuoteList();
+            // Update
+            updateButton.addEventListener('click', () => location.reload());
+            
+            // Clear Data
+            clearDataButton.addEventListener('click', () => {
+                if (confirm("Are you sure you want to erase all liked quotes? This action cannot be undone.")) {
+                    localStorage.removeItem(DB_KEY);
+                    favorites = [];
+                    alert("All liked quotes have been erased.");
+                    location.reload();
+                }
+            });
+
+            // --- INITIAL LOAD ---
+            applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
             mainManager.start();
         });
     </script>
